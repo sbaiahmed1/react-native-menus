@@ -1,41 +1,51 @@
 package com.menu
 
-import android.graphics.Color
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.SimpleViewManager
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ThemedReactContext
-import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
-import com.facebook.react.viewmanagers.MenuViewManagerInterface
-import com.facebook.react.viewmanagers.MenuViewManagerDelegate
 
 @ReactModule(name = MenuViewManager.NAME)
-class MenuViewManager : SimpleViewManager<MenuView>(),
-  MenuViewManagerInterface<MenuView> {
-  private val mDelegate: ViewManagerDelegate<MenuView>
+class MenuViewManager : ViewGroupManager<MenuView>() {
+    override fun getName(): String {
+        return NAME
+    }
 
-  init {
-    mDelegate = MenuViewManagerDelegate(this)
-  }
+    override fun createViewInstance(reactContext: ThemedReactContext): MenuView {
+        return MenuView(reactContext)
+    }
 
-  override fun getDelegate(): ViewManagerDelegate<MenuView>? {
-    return mDelegate
-  }
+    @ReactProp(name = "color")
+    fun setColor(view: MenuView, color: String?) {
+        view.setColor(color)
+    }
 
-  override fun getName(): String {
-    return NAME
-  }
+    @ReactProp(name = "checkedColor")
+    fun setCheckedColor(view: MenuView, color: String?) {
+        view.setCheckedColor(color)
+    }
 
-  public override fun createViewInstance(context: ThemedReactContext): MenuView {
-    return MenuView(context)
-  }
+    @ReactProp(name = "uncheckedColor")
+    fun setUncheckedColor(view: MenuView, color: String?) {
+        view.setUncheckedColor(color)
+    }
 
-  @ReactProp(name = "color")
-  override fun setColor(view: MenuView?, color: String?) {
-    view?.setBackgroundColor(Color.parseColor(color))
-  }
+    @ReactProp(name = "menuItems")
+    fun setMenuItems(view: MenuView, menuItems: com.facebook.react.bridge.ReadableArray?) {
+        view.setMenuItems(menuItems)
+    }
 
-  companion object {
-    const val NAME = "MenuView"
-  }
+    override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> {
+        return mapOf(
+            "onMenuSelect" to mapOf(
+                "phasedRegistrationNames" to mapOf(
+                    "bubbled" to "onMenuSelect"
+                )
+            )
+        )
+    }
+
+    companion object {
+        const val NAME = "MenuView"
+    }
 }

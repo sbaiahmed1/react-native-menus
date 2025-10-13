@@ -1,7 +1,24 @@
-import { codegenNativeComponent, type ViewProps } from 'react-native';
+import type { ViewProps } from 'react-native';
+import { codegenNativeComponent } from 'react-native';
+import type { BubblingEventHandler } from 'react-native/Libraries/Types/CodegenTypes';
 
-interface NativeProps extends ViewProps {
+export interface MenuItem {
+  identifier: string;
+  title: string;
+}
+
+export interface MenuSelectEvent {
+  identifier: string;
+  title: string;
+}
+
+export interface NativeProps extends ViewProps {
   color?: string;
+  checkedColor?: string;
+  uncheckedColor?: string;
+  menuItems?: ReadonlyArray<MenuItem>;
+  onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
 }
 
 export default codegenNativeComponent<NativeProps>('MenuView');
+export type { NativeProps as MenuViewProps };
