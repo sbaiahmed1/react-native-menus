@@ -7,7 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { useState } from 'react';
-import { MenuView } from 'react-native-menu';
+import { MenuView } from 'react-native-menus';
 
 const App = () => {
   const [selectedTheme, setSelectedTheme] = useState('system');

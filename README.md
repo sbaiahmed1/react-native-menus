@@ -1,4 +1,4 @@
-# React Native Menu
+# React Native Menus
 
 A native menu component for React Native that provides platform-specific context menus for both Android and iOS. Pass any custom component as a child to trigger native menus.
 
@@ -33,9 +33,9 @@ A native menu component for React Native that provides platform-specific context
 ## Installation
 
 ```bash
-npm install react-native-menu
+npm install react-native-menus
 # or
-yarn add react-native-menu
+yarn add react-native-menus
 ```
 
 ### iOS Setup
@@ -57,7 +57,7 @@ No additional setup required for Android.
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { MenuView } from 'react-native-menu';
+import { MenuView } from 'react-native-menus';
 
 const App = () => {
   const [selectedTheme, setSelectedTheme] = useState('system');

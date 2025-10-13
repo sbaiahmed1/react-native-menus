@@ -47,14 +47,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sbaiahmed1/react-native-menu.git"
+    "url": "git+https://github.com/sbaiahmed1/react-native-menus.git"
   },
   "author": "Ahmed Sbai <ahmedclubust@gmail.com> (https://github.com/sbaiahmed1)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sbaiahmed1/react-native-menu/issues"
+    "url": "https://github.com/sbaiahmed1/react-native-menus/issues"
   },
-  "homepage": "https://github.com/sbaiahmed1/react-native-menu#readme",
+  "homepage": "https://github.com/sbaiahmed1/react-native-menus#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

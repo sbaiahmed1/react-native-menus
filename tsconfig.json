@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-menu": ["./src/index"]
+      "react-native-menus": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
