@@ -1,5 +1,5 @@
 {
-  "name": "react-native-menu",
+  "name": "react-native-menus",
   "version": "0.1.0",
   "description": "A native menu for android/iOS",
   "main": "./lib/module/index.js",
@@ -55,7 +55,6 @@
     "url": "https://github.com/sbaiahmed1/react-native-menu/issues"
   },
   "homepage": "https://github.com/sbaiahmed1/react-native-menu#readme",
-  "private": false,
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
