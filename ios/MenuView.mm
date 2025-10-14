@@ -19,7 +19,6 @@ using namespace facebook::react;
     UIColor *_textColor;
     UIColor *_checkedColor;
     UIColor *_uncheckedColor;
-    NSString *_selectedIdentifier;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -82,7 +81,7 @@ using namespace facebook::react;
     if ([childView isKindOfClass:[UIButton class]]) {
         _menuButton = (UIButton *)childView;
         _menuButton.showsMenuAsPrimaryAction = YES;
-        [self updateMenuItems:_menuItems];
+        [self updateMenuItems:_menuItems selectedIdentifier:nil];
     } else {
         // For non-button children, create an invisible button overlay to show the menu
         [self disableUserInteractionRecursively:childView];
@@ -103,7 +102,7 @@ using namespace facebook::react;
             [_menuButton.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
         ]];
         
-        [self updateMenuItems:_menuItems];
+        [self updateMenuItems:_menuItems selectedIdentifier:nil];
     }
 }
 
@@ -156,6 +155,13 @@ using namespace facebook::react;
         }
     }
     
+    // Detect selectedIdentifier change
+    bool selectedIdentifierChanged = (oldViewProps.selectedIdentifier != newViewProps.selectedIdentifier);
+    NSString *currentSelectedIdentifier = nil;
+    if (!newViewProps.selectedIdentifier.empty()) {
+        currentSelectedIdentifier = [[NSString alloc] initWithUTF8String:newViewProps.selectedIdentifier.c_str()];
+    }
+    
     if (menuItemsChanged) {
         NSMutableArray *items = [[NSMutableArray alloc] init];
         for (const auto &item : newViewProps.menuItems) {
@@ -164,13 +170,15 @@ using namespace facebook::react;
             [items addObject:@{@"identifier": identifier, @"title": title}];
         }
         _menuItems = [items copy];
-        [self updateMenuItems:_menuItems];
+        [self updateMenuItems:_menuItems selectedIdentifier:currentSelectedIdentifier];
+    } else if (selectedIdentifierChanged) {
+        [self updateMenuItems:_menuItems selectedIdentifier:currentSelectedIdentifier];
     }
     
     [super updateProps:props oldProps:oldProps];
 }
 
-- (void)updateMenuItems:(NSArray<NSDictionary *> *)menuItems
+- (void)updateMenuItems:(NSArray<NSDictionary *> *)menuItems selectedIdentifier:(NSString *)selectedIdentifier
 {
     if (!_menuButton) {
         // Menu button not set yet, will be updated when child view is added
@@ -195,8 +203,8 @@ using namespace facebook::react;
             [self selectMenuItem:identifier title:title];
         }];
         
-        // Set state based on current selection
-        if ([identifier isEqualToString:_selectedIdentifier]) {
+        // Set state based on current selection (controlled via props)
+        if (selectedIdentifier != nil && [identifier isEqualToString:selectedIdentifier]) {
             action.state = UIMenuElementStateOn;
         }
         
@@ -209,10 +217,6 @@ using namespace facebook::react;
 
 - (void)selectMenuItem:(NSString *)identifier title:(NSString *)title
 {
-    _selectedIdentifier = identifier;
-    if (_menuButton) {
-        [self updateMenuItems:_menuItems]; // Refresh to update checkmarks
-    }
     [self sendMenuSelection:identifier title:title];
 }
 

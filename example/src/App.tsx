@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { MenuView } from 'react-native-menus';
 
 const App = () => {
-  const [selectedTheme, setSelectedTheme] = useState('system');
+  const [selectedTheme, setSelectedTheme] = useState('dark');
   const [selectedSort, setSelectedSort] = useState('date');
 
   const handleMenuSelect = (event: {
@@ -51,6 +51,7 @@ const App = () => {
             <MenuView
               checkedColor="#007AFF"
               uncheckedColor="#8E8E93"
+              selectedIdentifier={selectedTheme}
               menuItems={[
                 { identifier: 'light', title: 'Light Mode' },
                 { identifier: 'dark', title: 'Dark Mode' },
@@ -78,6 +79,7 @@ const App = () => {
             <MenuView
               checkedColor="#34C759"
               uncheckedColor="#8E8E93"
+              selectedIdentifier={selectedSort}
               menuItems={[
                 { identifier: 'date', title: 'Date' },
                 { identifier: 'name', title: 'Name' },

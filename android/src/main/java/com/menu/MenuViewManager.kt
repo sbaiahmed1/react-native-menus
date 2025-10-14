@@ -35,6 +35,11 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         view.setMenuItems(menuItems)
     }
 
+    @ReactProp(name = "selectedIdentifier")
+    fun setSelectedIdentifier(view: MenuView, selectedIdentifier: String?) {
+        view.setSelectedIdentifier(selectedIdentifier)
+    }
+
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> {
         return mapOf(
             "onMenuSelect" to mapOf(

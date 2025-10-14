@@ -114,6 +114,28 @@ const styles = StyleSheet.create({
 export default App;
 ```
 
+### Controlled Selection (Recommended)
+
+Use the `selectedIdentifier` prop to fully control which item is marked as selected. Update it in your `onMenuSelect` handler to keep iOS and Android behavior consistent.
+
+```tsx
+const [selectedSort, setSelectedSort] = useState('date');
+
+<MenuView
+  selectedIdentifier={selectedSort}
+  menuItems={[
+    { identifier: 'date', title: 'Date' },
+    { identifier: 'name', title: 'Name' },
+    { identifier: 'size', title: 'Size' },
+  ]}
+  onMenuSelect={({ nativeEvent }) => setSelectedSort(nativeEvent.identifier)}
+>
+  <View style={styles.menuButton}>
+    <Text>📊 Sort by: {selectedSort}</Text>
+  </View>
+</MenuView>
+```
+
 ### Custom Styled Trigger
 
 ```tsx
@@ -159,6 +181,7 @@ export default App;
 | `children` | `ReactNode` | **Yes** | - | The trigger component that opens the menu when tapped |
 | `menuItems` | `MenuItem[]` | Yes | `[]` | Array of menu items to display |
 | `onMenuSelect` | `(event: MenuSelectEvent) => void` | No | - | Callback fired when a menu item is selected |
+| `selectedIdentifier` | `string` | No | - | Controlled selected item identifier; shows a native checkmark for the matching item |
 | `checkedColor` | `string` | No | `#007AFF` | Color for checked/selected menu items (Android only) |
 | `uncheckedColor` | `string` | No | `#8E8E93` | Color for unchecked/unselected menu items (Android only) |
 | `color` | `string` | No | - | Reserved for future use |
@@ -217,8 +240,8 @@ The MenuView component accepts any React Native component as a child, which beco
 - **UI:** Native `UIMenu` attached to an invisible `UIButton` overlay
 - **Menu Items:** Native `UIAction` elements with system styling
 - **Trigger:** Creates transparent button overlay on top of child view to show native menu
-- **Checkmarks:** Native system checkmarks with `UIMenuElementStateOn`
-- **Selection:** Native iOS menu behavior with smooth animations
+- **Checkmarks:** Controlled via `selectedIdentifier` and rendered using `UIMenuElementStateOn`
+- **Selection:** Emits `onMenuSelect` without mutating native state; update `selectedIdentifier` in React to reflect changes
 
 **Key Implementation Details:**
 - Disables user interaction on child views recursively
@@ -235,6 +258,7 @@ The MenuView component accepts any React Native component as a child, which beco
 | Unchecked Color | System default | Fully customizable |
 | Animation | Native iOS animation | Slide up animation |
 | Scrolling | Native UIMenu scrolling | Custom ScrollView (max 40% screen) |
+| Selection State | Controlled via `selectedIdentifier` | use `selectedIdentifier` for cross-platform parity |
 | Appearance | iOS system theme | White background with rounded corners |
 
 ## Example Project
@@ -271,6 +295,10 @@ yarn android
 **iOS:** Make sure you're running iOS 14 or later, as UIMenu is only available from iOS 14+.
 
 **Android:** Ensure your child component doesn't have `onPress` or other touch handlers that might interfere. The MenuView intercepts all touch events at the parent level.
+
+### Checkmark not updating on iOS/Android
+
+Pass and update `selectedIdentifier`. iOS does not shift the checkmark automatically—reflect selection in props via your `onMenuSelect` handler.
 
 ### Children prop is required
 

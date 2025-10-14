@@ -87,6 +87,10 @@ class MenuView(context: Context) : FrameLayout(context) {
         }
     }
 
+    fun setSelectedIdentifier(selectedIdentifier: String?) {
+        this.selectedItemIdentifier = selectedIdentifier
+    }
+
     fun setMenuItems(menuItems: ReadableArray?) {
         val items = mutableListOf<Map<String, String>>()
         
@@ -288,7 +292,7 @@ class MenuView(context: Context) : FrameLayout(context) {
     }
 
     private fun selectMenuItem(identifier: String, title: String) {
-        selectedItemIdentifier = identifier
+        // No longer store selectedIdentifier internally - it's controlled by props
         sendMenuSelection(identifier, title)
     }
 
