@@ -204,7 +204,7 @@ using namespace facebook::react;
         }];
         
         // Set state based on current selection (controlled via props)
-        if (selectedIdentifier != nil && [identifier isEqualToString:selectedIdentifier]) {
+        if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [identifier isEqualToString:selectedIdentifier]) {
             action.state = UIMenuElementStateOn;
         }
         
