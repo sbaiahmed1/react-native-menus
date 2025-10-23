@@ -249,6 +249,7 @@ using namespace facebook::react;
         if ([element isKindOfClass:[UIAction class]]) {
             UIAction *oldAction = (UIAction *)element;
             
+            // Create new action with handler that captures the identifier and title
             UIAction *newAction = [UIAction actionWithTitle:oldAction.title
                                                       image:oldAction.image
                                                  identifier:oldAction.identifier
@@ -256,11 +257,19 @@ using namespace facebook::react;
                 [self selectMenuItem:action.identifier title:action.title];
             }];
             
+            // Copy all relevant properties from oldAction to preserve behavior
+            newAction.attributes = oldAction.attributes;
+            
             // Update state based on current selection
             if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [oldAction.identifier isEqualToString:selectedIdentifier]) {
                 newAction.state = UIMenuElementStateOn;
             } else {
                 newAction.state = UIMenuElementStateOff;
+            }
+            
+            // Copy discoverability title if present
+            if (oldAction.discoverabilityTitle) {
+                newAction.discoverabilityTitle = oldAction.discoverabilityTitle;
             }
             
             [actions addObject:newAction];
