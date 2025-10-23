@@ -1,12 +1,12 @@
+import { useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  ScrollView,
-  Alert,
 } from 'react-native';
-import { useState } from 'react';
 import { MenuView } from 'react-native-menus';
 
 const App = () => {
