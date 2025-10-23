@@ -74,11 +74,18 @@ using namespace facebook::react;
 
 - (void)setupChildViewAsMenuTrigger:(UIView *)childView
 {
-    // Add the child view to our view hierarchy
-    [self addSubview:childView];
+    // Don't manually add the child view - React already added it via mountChildComponentView
+    // Just ensure it has the correct constraints
+    childView.translatesAutoresizingMaskIntoConstraints = NO;
+    
+    // Remove any existing constraints on the child view to avoid conflicts
+    [childView.constraints enumerateObjectsUsingBlock:^(NSLayoutConstraint *constraint, NSUInteger idx, BOOL *stop) {
+        if (constraint.firstItem == childView || constraint.secondItem == childView) {
+            [constraint setActive:NO];
+        }
+    }];
     
     // Setup constraints to fill the container
-    childView.translatesAutoresizingMaskIntoConstraints = NO;
     [NSLayoutConstraint activateConstraints:@[
         [childView.topAnchor constraintEqualToAnchor:self.topAnchor],
         [childView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
@@ -181,7 +188,12 @@ using namespace facebook::react;
         _menuItems = [items copy];
         [self updateMenuItems:_menuItems selectedIdentifier:currentSelectedIdentifier];
     } else if (selectedIdentifierChanged) {
+        // Always update the menu when selectedIdentifier changes
         [self updateMenuItems:_menuItems selectedIdentifier:currentSelectedIdentifier];
+    } else if (_menuButton && _menuButton.menu) {
+        // Even if nothing changed, ensure the menu reflects current selectedIdentifier
+        // This handles cases where the component was remounted after being unmounted
+        [self updateMenuSelection:currentSelectedIdentifier];
     }
     
     [super updateProps:props oldProps:oldProps];
@@ -218,6 +230,41 @@ using namespace facebook::react;
         }
         
         [actions addObject:action];
+    }
+    
+    UIMenu *menu = [UIMenu menuWithTitle:@"" children:actions];
+    _menuButton.menu = menu;
+}
+
+- (void)updateMenuSelection:(NSString *)selectedIdentifier
+{
+    if (!_menuButton || !_menuButton.menu) {
+        return;
+    }
+    
+    // Recreate the menu with updated selection states
+    NSMutableArray<UIAction *> *actions = [[NSMutableArray alloc] init];
+    
+    for (UIMenuElement *element in _menuButton.menu.children) {
+        if ([element isKindOfClass:[UIAction class]]) {
+            UIAction *oldAction = (UIAction *)element;
+            
+            UIAction *newAction = [UIAction actionWithTitle:oldAction.title
+                                                      image:oldAction.image
+                                                 identifier:oldAction.identifier
+                                                    handler:^(__kindof UIAction * _Nonnull action) {
+                [self selectMenuItem:action.identifier title:action.title];
+            }];
+            
+            // Update state based on current selection
+            if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [oldAction.identifier isEqualToString:selectedIdentifier]) {
+                newAction.state = UIMenuElementStateOn;
+            } else {
+                newAction.state = UIMenuElementStateOff;
+            }
+            
+            [actions addObject:newAction];
+        }
     }
     
     UIMenu *menu = [UIMenu menuWithTitle:@"" children:actions];
