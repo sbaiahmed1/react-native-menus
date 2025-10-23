@@ -38,29 +38,38 @@ using namespace facebook::react;
 
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
-    [super mountChildComponentView:childComponentView index:index];
-    
     // Only use the first child as the menu trigger
     if (index == 0) {
-        // Remove old child view if exists
-        if (_childView) {
-            [_childView removeFromSuperview];
+        // Clean up old child view if exists
+        if (_childView && _childView != childComponentView) {
+            // Remove from our manual tracking without calling removeFromSuperview
+            // since React will handle the view hierarchy cleanup
             _childView = nil;
+            _menuButton = nil;
         }
         
         _childView = (UIView *)childComponentView;
+    }
+    
+    // Let React handle the mounting first
+    [super mountChildComponentView:childComponentView index:index];
+    
+    // Setup menu trigger after React has properly mounted the view
+    if (index == 0) {
         [self setupChildViewAsMenuTrigger:_childView];
     }
 }
 
 - (void)unmountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
-    [super unmountChildComponentView:childComponentView index:index];
-    
+    // Clean up our references before React unmounts
     if (index == 0 && _childView == childComponentView) {
         _childView = nil;
         _menuButton = nil;
     }
+    
+    // Let React handle the unmounting
+    [super unmountChildComponentView:childComponentView index:index];
 }
 
 - (void)setupChildViewAsMenuTrigger:(UIView *)childView
