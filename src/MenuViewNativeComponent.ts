@@ -5,6 +5,8 @@ import type { BubblingEventHandler } from 'react-native/Libraries/Types/CodegenT
 export interface MenuItem {
   identifier: string;
   title: string;
+  // iOS-only: SF Symbol name to show beside the title
+  iosSymbol?: string;
 }
 
 export interface MenuSelectEvent {
