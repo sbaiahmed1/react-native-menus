@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { MenuView } from 'react-native-menus';
+import { MenuView, asSFSymbol } from 'react-native-menus';
 
 const App = () => {
   const [selectedTheme, setSelectedTheme] = useState('dark');
@@ -25,14 +25,12 @@ const App = () => {
     nativeEvent: { identifier: string; title: string };
   }) => {
     setSelectedTheme(event.nativeEvent.identifier);
-    console.log('Theme changed to:', event.nativeEvent.identifier);
   };
 
   const handleSortSelect = (event: {
     nativeEvent: { identifier: string; title: string };
   }) => {
     setSelectedSort(event.nativeEvent.identifier);
-    console.log('Sort changed to:', event.nativeEvent.identifier);
   };
 
   return (
@@ -53,9 +51,21 @@ const App = () => {
               uncheckedColor="#8E8E93"
               selectedIdentifier={selectedTheme}
               menuItems={[
-                { identifier: 'light', title: 'Light Mode' },
-                { identifier: 'dark', title: 'Dark Mode' },
-                { identifier: 'system', title: 'System Default' },
+                {
+                  identifier: 'light',
+                  title: 'Light Mode',
+                  iosSymbol: asSFSymbol('sun.max'),
+                },
+                {
+                  identifier: 'dark',
+                  title: 'Dark Mode',
+                  iosSymbol: asSFSymbol('moon.fill'),
+                },
+                {
+                  identifier: 'system',
+                  title: 'System Default',
+                  iosSymbol: asSFSymbol('gearshape'),
+                },
               ]}
               onMenuSelect={handleThemeSelect}
             >
@@ -74,45 +84,70 @@ const App = () => {
 
           {/* Example 2: Sort Options */}
           <View style={styles.menuContainer}>
-            <Text style={styles.subtitle}>2. Sort By</Text>
+            <Text style={styles.subtitle}>2. Sort Options</Text>
             <Text style={styles.hint}>Current: {selectedSort}</Text>
             <MenuView
-              checkedColor="#34C759"
-              uncheckedColor="#8E8E93"
-              selectedIdentifier={selectedSort}
               menuItems={[
-                { identifier: 'date', title: 'Date' },
-                { identifier: 'name', title: 'Name' },
-                { identifier: 'size', title: 'Size' },
-                { identifier: 'type', title: 'Type' },
+                {
+                  identifier: 'date',
+                  title: 'Date',
+                  iosSymbol: asSFSymbol('calendar'),
+                },
+                {
+                  identifier: 'name',
+                  title: 'Name',
+                  iosSymbol: asSFSymbol('textformat'),
+                },
+                {
+                  identifier: 'rating',
+                  title: 'Rating',
+                  iosSymbol: asSFSymbol('star.fill'),
+                },
+                {
+                  identifier: 'size',
+                  title: 'Size',
+                  iosSymbol: asSFSymbol('square.stack.3d.up'),
+                },
               ]}
+              selectedIdentifier={selectedSort}
               onMenuSelect={handleSortSelect}
             >
               <View style={styles.menuButton}>
-                <Text style={styles.menuButtonText}>
-                  📊 Sort by:{' '}
-                  {selectedSort.charAt(0).toUpperCase() + selectedSort.slice(1)}
-                </Text>
+                <Text style={styles.menuButtonText}>🔽 Sort</Text>
               </View>
             </MenuView>
           </View>
 
-          {/* Example 3: File Actions */}
+          {/* Example 3: Actions Menu */}
           <View style={styles.menuContainer}>
-            <Text style={styles.subtitle}>3. File Actions</Text>
+            <Text style={styles.subtitle}>3. Actions</Text>
             <MenuView
-              checkedColor="#FF9500"
               menuItems={[
-                { identifier: 'open', title: 'Open' },
-                { identifier: 'share', title: 'Share' },
-                { identifier: 'rename', title: 'Rename' },
-                { identifier: 'duplicate', title: 'Duplicate' },
-                { identifier: 'delete', title: 'Delete' },
+                {
+                  identifier: 'reply',
+                  title: 'Reply',
+                  iosSymbol: asSFSymbol('arrowshape.turn.up.left'),
+                },
+                {
+                  identifier: 'forward',
+                  title: 'Forward',
+                  iosSymbol: asSFSymbol('arrowshape.turn.up.right'),
+                },
+                {
+                  identifier: 'archive',
+                  title: 'Archive',
+                  iosSymbol: asSFSymbol('archivebox'),
+                },
+                {
+                  identifier: 'delete',
+                  title: 'Delete',
+                  iosSymbol: asSFSymbol('trash'),
+                },
               ]}
               onMenuSelect={handleMenuSelect}
             >
               <View style={styles.menuButton}>
-                <Text style={styles.menuButtonText}>📁 File Options</Text>
+                <Text style={styles.menuButtonText}>✉️ Message Actions</Text>
               </View>
             </MenuView>
           </View>
@@ -123,10 +158,26 @@ const App = () => {
             <MenuView
               checkedColor="#FF3B30"
               menuItems={[
-                { identifier: 'low', title: 'Low Priority' },
-                { identifier: 'medium', title: 'Medium Priority' },
-                { identifier: 'high', title: 'High Priority' },
-                { identifier: 'urgent', title: 'Urgent' },
+                {
+                  identifier: 'low',
+                  title: 'Low Priority',
+                  iosSymbol: asSFSymbol('arrow.down'),
+                },
+                {
+                  identifier: 'medium',
+                  title: 'Medium Priority',
+                  iosSymbol: asSFSymbol('equal'),
+                },
+                {
+                  identifier: 'high',
+                  title: 'High Priority',
+                  iosSymbol: asSFSymbol('arrow.up'),
+                },
+                {
+                  identifier: 'urgent',
+                  title: 'Urgent',
+                  iosSymbol: asSFSymbol('exclamationmark.triangle'),
+                },
               ]}
               onMenuSelect={handleMenuSelect}
             >
@@ -142,10 +193,26 @@ const App = () => {
             <Text style={styles.hint}>Using custom child component</Text>
             <MenuView
               menuItems={[
-                { identifier: 'profile', title: 'View Profile' },
-                { identifier: 'settings', title: 'Settings' },
-                { identifier: 'help', title: 'Help & Support' },
-                { identifier: 'logout', title: 'Logout' },
+                {
+                  identifier: 'profile',
+                  title: 'View Profile',
+                  iosSymbol: asSFSymbol('person.circle'),
+                },
+                {
+                  identifier: 'settings',
+                  title: 'Settings',
+                  iosSymbol: asSFSymbol('gear'),
+                },
+                {
+                  identifier: 'help',
+                  title: 'Help & Support',
+                  iosSymbol: asSFSymbol('questionmark.circle'),
+                },
+                {
+                  identifier: 'logout',
+                  title: 'Logout',
+                  iosSymbol: asSFSymbol('rectangle.portrait.and.arrow.right'),
+                },
               ]}
               onMenuSelect={handleMenuSelect}
             >
@@ -161,26 +228,106 @@ const App = () => {
             <MenuView
               checkedColor="#5856D6"
               menuItems={[
-                { identifier: 'opt1', title: 'Option 1' },
-                { identifier: 'opt2', title: 'Option 2' },
-                { identifier: 'opt3', title: 'Option 3' },
-                { identifier: 'opt4', title: 'Option 4' },
-                { identifier: 'opt5', title: 'Option 5' },
-                { identifier: 'opt6', title: 'Option 6' },
-                { identifier: 'opt7', title: 'Option 7' },
-                { identifier: 'opt8', title: 'Option 8' },
-                { identifier: 'opt9', title: 'Option 9' },
-                { identifier: 'opt10', title: 'Option 10' },
-                { identifier: 'opt11', title: 'Option 11' },
-                { identifier: 'opt12', title: 'Option 12' },
-                { identifier: 'opt13', title: 'Option 13' },
-                { identifier: 'opt14', title: 'Option 14' },
-                { identifier: 'opt15', title: 'Option 15' },
-                { identifier: 'opt16', title: 'Option 16' },
-                { identifier: 'opt17', title: 'Option 17' },
-                { identifier: 'opt18', title: 'Option 18' },
-                { identifier: 'opt19', title: 'Option 19' },
-                { identifier: 'opt20', title: 'Option 20' },
+                {
+                  identifier: 'opt1',
+                  title: 'Option 1',
+                  iosSymbol: asSFSymbol('1.circle'),
+                },
+                {
+                  identifier: 'opt2',
+                  title: 'Option 2',
+                  iosSymbol: asSFSymbol('2.circle'),
+                },
+                {
+                  identifier: 'opt3',
+                  title: 'Option 3',
+                  iosSymbol: asSFSymbol('3.circle'),
+                },
+                {
+                  identifier: 'opt4',
+                  title: 'Option 4',
+                  iosSymbol: asSFSymbol('4.circle'),
+                },
+                {
+                  identifier: 'opt5',
+                  title: 'Option 5',
+                  iosSymbol: asSFSymbol('5.circle'),
+                },
+                {
+                  identifier: 'opt6',
+                  title: 'Option 6',
+                  iosSymbol: asSFSymbol('6.circle'),
+                },
+                {
+                  identifier: 'opt7',
+                  title: 'Option 7',
+                  iosSymbol: asSFSymbol('7.circle'),
+                },
+                {
+                  identifier: 'opt8',
+                  title: 'Option 8',
+                  iosSymbol: asSFSymbol('8.circle'),
+                },
+                {
+                  identifier: 'opt9',
+                  title: 'Option 9',
+                  iosSymbol: asSFSymbol('9.circle'),
+                },
+                {
+                  identifier: 'opt10',
+                  title: 'Option 10',
+                  iosSymbol: asSFSymbol('10.circle'),
+                },
+                {
+                  identifier: 'opt11',
+                  title: 'Option 11',
+                  iosSymbol: asSFSymbol('11.circle'),
+                },
+                {
+                  identifier: 'opt12',
+                  title: 'Option 12',
+                  iosSymbol: asSFSymbol('12.circle'),
+                },
+                {
+                  identifier: 'opt13',
+                  title: 'Option 13',
+                  iosSymbol: asSFSymbol('13.circle'),
+                },
+                {
+                  identifier: 'opt14',
+                  title: 'Option 14',
+                  iosSymbol: asSFSymbol('14.circle'),
+                },
+                {
+                  identifier: 'opt15',
+                  title: 'Option 15',
+                  iosSymbol: asSFSymbol('15.circle'),
+                },
+                {
+                  identifier: 'opt16',
+                  title: 'Option 16',
+                  iosSymbol: asSFSymbol('16.circle'),
+                },
+                {
+                  identifier: 'opt17',
+                  title: 'Option 17',
+                  iosSymbol: asSFSymbol('17.circle'),
+                },
+                {
+                  identifier: 'opt18',
+                  title: 'Option 18',
+                  iosSymbol: asSFSymbol('18.circle'),
+                },
+                {
+                  identifier: 'opt19',
+                  title: 'Option 19',
+                  iosSymbol: asSFSymbol('19.circle'),
+                },
+                {
+                  identifier: 'opt20',
+                  title: 'Option 20',
+                  iosSymbol: asSFSymbol('20.circle'),
+                },
               ]}
               onMenuSelect={handleMenuSelect}
             >
@@ -198,67 +345,49 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
+    gap: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
+    fontSize: 24,
+    fontWeight: '600',
   },
   description: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  hint: {
-    fontSize: 13,
-    marginBottom: 8,
-    color: '#999',
+    color: '#6b7280',
   },
   menuContainer: {
-    marginBottom: 25,
+    gap: 12,
+    paddingVertical: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  hint: {
+    color: '#6b7280',
   },
   menuButton: {
-    height: 50,
-    backgroundColor: '#fff',
+    padding: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
   },
   menuButtonText: {
-    fontSize: 15,
-    color: '#333',
+    fontSize: 16,
   },
   customButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#eef2ff',
   },
   customButtonText: {
-    color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });
 

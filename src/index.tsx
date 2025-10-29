@@ -10,6 +10,10 @@ import NativeMenuView from './MenuViewNativeComponent';
 
 export type { MenuItem, MenuSelectEvent };
 
+// Re-export SF Symbols helpers for consumers
+export type { SFSymbol } from './sf-symbols';
+export { asSFSymbol, isLikelySFSymbol, CommonSFSymbols } from './sf-symbols';
+
 export interface MenuViewProps extends Omit<NativeMenuViewProps, 'children'> {
   children?: ReactNode;
 }

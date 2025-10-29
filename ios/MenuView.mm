@@ -188,7 +188,12 @@ using namespace facebook::react;
         for (size_t i = 0; i < newViewProps.menuItems.size(); i++) {
             const auto &newItem = newViewProps.menuItems[i];
             const auto &oldItem = oldViewProps.menuItems[i];
-            if (newItem.identifier != oldItem.identifier || newItem.title != oldItem.title) {
+            bool contentChanged = (newItem.identifier != oldItem.identifier) || (newItem.title != oldItem.title);
+            #ifdef __cplusplus
+            // Also detect icon changes so menu can be rebuilt with updated images
+            contentChanged = contentChanged || (newItem.iosSymbol != oldItem.iosSymbol);
+            #endif
+            if (contentChanged) {
                 menuItemsChanged = true;
                 break;
             }
@@ -207,7 +212,17 @@ using namespace facebook::react;
         for (const auto &item : newViewProps.menuItems) {
             NSString *identifier = [[NSString alloc] initWithUTF8String:item.identifier.c_str()];
             NSString *title = [[NSString alloc] initWithUTF8String:item.title.c_str()];
-            [items addObject:@{@"identifier": identifier, @"title": title}];
+            NSString *symbol = nil;
+            #ifdef __cplusplus
+            if (!item.iosSymbol.empty()) {
+                symbol = [[NSString alloc] initWithUTF8String:item.iosSymbol.c_str()];
+            }
+            #endif
+            NSMutableDictionary *dict = [@{ @"identifier": identifier, @"title": title } mutableCopy];
+            if (symbol) {
+                dict[@"iosSymbol"] = symbol;
+            }
+            [items addObject:dict];
         }
         _menuItems = [items copy];
         [self updateMenuItems:_menuItems selectedIdentifier:currentSelectedIdentifier];
@@ -240,9 +255,14 @@ using namespace facebook::react;
     for (NSDictionary *item in menuItems) {
         NSString *identifier = item[@"identifier"];
         NSString *title = item[@"title"];
+        NSString *symbol = item[@"iosSymbol"];
+        UIImage *image = nil;
+        if (symbol && symbol.length > 0) {
+            image = [UIImage systemImageNamed:symbol];
+        }
         
         UIAction *action = [UIAction actionWithTitle:title
-                                               image:nil
+                                               image:image
                                           identifier:identifier
                                              handler:^(__kindof UIAction * _Nonnull action) {
             [self selectMenuItem:identifier title:title];
