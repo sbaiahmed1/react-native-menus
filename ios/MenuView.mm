@@ -73,26 +73,7 @@ using namespace facebook::react;
 }
 
 - (void)setupChildViewAsMenuTrigger:(UIView *)childView
-{
-    // Don't manually add the child view - React already added it via mountChildComponentView
-    // Just ensure it has the correct constraints
-    childView.translatesAutoresizingMaskIntoConstraints = NO;
-    
-    // Remove any existing constraints on the child view to avoid conflicts
-    [childView.constraints enumerateObjectsUsingBlock:^(NSLayoutConstraint *constraint, NSUInteger idx, BOOL *stop) {
-        if (constraint.firstItem == childView || constraint.secondItem == childView) {
-            [constraint setActive:NO];
-        }
-    }];
-    
-    // Setup constraints to fill the container
-    [NSLayoutConstraint activateConstraints:@[
-        [childView.topAnchor constraintEqualToAnchor:self.topAnchor],
-        [childView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-        [childView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-        [childView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
-    ]];
-    
+{    
     // If the child is a UIButton, attach the menu directly to it
     if ([childView isKindOfClass:[UIButton class]]) {
         _menuButton = (UIButton *)childView;
