@@ -28,6 +28,7 @@ class MenuView(context: Context) : FrameLayout(context) {
     private var checkedColor: String = "#007AFF" // Default iOS blue
     private var uncheckedColor: String = "#8E8E93" // Default iOS gray
     private var textColor: String? = null
+    private var disabled: Boolean = false
 
     init {
         setupMenuTrigger()
@@ -46,7 +47,10 @@ class MenuView(context: Context) : FrameLayout(context) {
     }
 
     override fun onTouchEvent(event: android.view.MotionEvent?): Boolean {
-        // Handle touch events - show menu on tap
+        // Handle touch events - show menu on tap only if not disabled
+        if (disabled) {
+            return false
+        }
         if (event?.action == android.view.MotionEvent.ACTION_UP) {
             performClick()
             return true
@@ -89,6 +93,16 @@ class MenuView(context: Context) : FrameLayout(context) {
 
     fun setSelectedIdentifier(selectedIdentifier: String?) {
         this.selectedItemIdentifier = selectedIdentifier
+    }
+
+    fun setDisabled(disabled: Boolean) {
+        this.disabled = disabled
+        updateDisabledState()
+    }
+
+    private fun updateDisabledState() {
+        isClickable = !disabled
+        isFocusable = !disabled
     }
 
     fun setMenuItems(menuItems: ReadableArray?) {
