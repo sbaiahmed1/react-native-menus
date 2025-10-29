@@ -16,6 +16,7 @@ export { asSFSymbol, isLikelySFSymbol, CommonSFSymbols } from './sf-symbols';
 
 export interface MenuViewProps extends Omit<NativeMenuViewProps, 'children'> {
   children?: ReactNode;
+  disabled?: boolean;
 }
 
 export const MenuView = React.forwardRef<any, MenuViewProps>((props, ref) => {

@@ -25,6 +25,7 @@ A native menu component for React Native that provides platform-specific context
 - ✅ Custom trigger components - pass any React Native component as a child
 - ✅ Customizable colors for menu items
 - ✅ Checkmark support with custom colors
+- ✅ SF Symbols support on iOS (iosSymbol property)
 - ✅ Scrollable menus for long lists
 - ✅ Event handling for menu item selection
 - ✅ TypeScript support
@@ -172,6 +173,64 @@ const [selectedSort, setSelectedSort] = useState('date');
 </MenuView>
 ```
 
+### Disabled Menu
+
+```tsx
+const [isDisabled, setIsDisabled] = useState(false);
+
+<MenuView
+  disabled={isDisabled}
+  menuItems={[
+    { identifier: 'enable', title: 'Enable Menu' },
+    { identifier: 'disable', title: 'Disable Menu' },
+  ]}
+  onMenuSelect={({ nativeEvent }) => {
+    setIsDisabled(nativeEvent.identifier === 'disable');
+  }}
+>
+  <View style={[styles.menuButton, isDisabled && styles.disabledButton]}>
+    <Text style={[styles.menuButtonText, isDisabled && styles.disabledText]}>
+      {isDisabled ? '🔒 Menu Disabled' : '🔓 Menu Enabled'}
+    </Text>
+  </View>
+</MenuView>
+
+// Add these styles
+const styles = StyleSheet.create({
+  // ... other styles
+  disabledButton: {
+    opacity: 0.6,
+  },
+  disabledText: {
+    color: '#999',
+  },
+});
+```
+
+### SF Symbols (iOS only)
+
+```tsx
+import { MenuView } from 'react-native-menus';
+
+<MenuView
+  menuItems={[
+    { identifier: 'profile', title: 'View Profile', iosSymbol: 'person.circle' },
+    { identifier: 'settings', title: 'Settings', iosSymbol: 'gear' },
+    { identifier: 'logout', title: 'Logout', iosSymbol: 'arrow.right.square' },
+  ]}
+  onMenuSelect={handleMenuSelect}
+>
+  <View style={styles.menuButton}>
+    <Text>👤 Account Menu with SF Symbols</Text>
+  </View>
+</MenuView>
+```
+
+For a list of available SF Symbols, refer to Apple's [SF Symbols app](https://developer.apple.com/sf-symbols/) or use common names like:
+- `"arrow.up"`, `"arrow.down"`, `"arrow.left"`, `"arrow.right"`
+- `"gear"`, `"heart"`, `"trash"`, `"checkmark"`, `"xmark"`
+- Add `.fill` suffix for filled variants: `"heart.fill"`, `"gear.fill"`
+
 ## API Reference
 
 ### Props
@@ -185,6 +244,7 @@ const [selectedSort, setSelectedSort] = useState('date');
 | `checkedColor` | `string` | No | `#007AFF` | Color for checked/selected menu items (Android only) |
 | `uncheckedColor` | `string` | No | `#8E8E93` | Color for unchecked/unselected menu items (Android only) |
 | `color` | `string` | No | - | Reserved for future use |
+| `disabled` | `boolean` | No | `false` | Disables the menu interaction when set to `true` |
 | `style` | `ViewStyle` | No | - | Style applied to the container view |
 
 ### Types
@@ -195,6 +255,7 @@ const [selectedSort, setSelectedSort] = useState('date');
 interface MenuItem {
   identifier: string; // Unique identifier for the menu item
   title: string;      // Display text for the menu item
+  iosSymbol?: string; // iOS-only: SF Symbol name to show beside the title (e.g., "gear", "heart.fill")
 }
 ```
 
@@ -254,6 +315,7 @@ The MenuView component accepts any React Native component as a child, which beco
 | Feature | iOS | Android |
 |---------|-----|---------|
 | Menu Style | Native UIMenu popover | Modal dialog at bottom |
+| SF Symbols | ✅ Full support via `iosSymbol` property | ❌ Not supported |
 | Checkmark Color | System default (not customizable) | Fully customizable |
 | Unchecked Color | System default | Fully customizable |
 | Animation | Native iOS animation | Slide up animation |

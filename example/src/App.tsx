@@ -12,6 +12,7 @@ import { MenuView, asSFSymbol } from 'react-native-menus';
 const App = () => {
   const [selectedTheme, setSelectedTheme] = useState('dark');
   const [selectedSort, setSelectedSort] = useState('date');
+  const [isDisabled, setIsDisabled] = useState(false);
 
   const handleMenuSelect = (event: {
     nativeEvent: { identifier: string; title: string };
@@ -336,6 +337,51 @@ const App = () => {
               </View>
             </MenuView>
           </View>
+
+          {/* Example 7: Disabled Menu */}
+          <View style={styles.menuContainer}>
+            <Text style={styles.subtitle}>7. Disabled Menu</Text>
+            <Text onPress={() => setIsDisabled(false)} style={styles.hint}>
+              Current:{' '}
+              {isDisabled ? 'Disabled, (Click me to re-enable)' : 'Enabled'}
+            </Text>
+            <MenuView
+              disabled={isDisabled}
+              menuItems={[
+                {
+                  identifier: 'enable',
+                  title: 'Enable Menu',
+                  iosSymbol: asSFSymbol('checkmark.circle'),
+                },
+                {
+                  identifier: 'disable',
+                  title: 'Disable Menu',
+                  iosSymbol: asSFSymbol('xmark.circle'),
+                },
+              ]}
+              onMenuSelect={(event) => {
+                const { identifier } = event.nativeEvent;
+                setIsDisabled(identifier === 'disable');
+                Alert.alert(
+                  'Menu Selection',
+                  `Menu ${identifier === 'disable' ? 'disabled' : 'enabled'}`
+                );
+              }}
+            >
+              <View
+                style={[styles.menuButton, isDisabled && styles.disabledButton]}
+              >
+                <Text
+                  style={[
+                    styles.menuButtonText,
+                    isDisabled && styles.disabledText,
+                  ]}
+                >
+                  {isDisabled ? '🔒 Disabled Menu' : '🔓 Enabled Menu'}
+                </Text>
+              </View>
+            </MenuView>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -388,6 +434,13 @@ const styles = StyleSheet.create({
   customButtonText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  disabledButton: {
+    backgroundColor: '#f3f4f6',
+    opacity: 0.6,
+  },
+  disabledText: {
+    color: '#9ca3af',
   },
 });
 

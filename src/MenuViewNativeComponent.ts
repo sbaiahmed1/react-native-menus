@@ -20,6 +20,7 @@ export interface NativeProps extends ViewProps {
   uncheckedColor?: string;
   menuItems?: ReadonlyArray<MenuItem>;
   selectedIdentifier?: string;
+  disabled?: boolean;
   onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
 }
 

@@ -40,6 +40,11 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         view.setSelectedIdentifier(selectedIdentifier)
     }
 
+    @ReactProp(name = "disabled")
+    fun setDisabled(view: MenuView, disabled: Boolean) {
+        view.setDisabled(disabled)
+    }
+
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> {
         return mapOf(
             "onMenuSelect" to mapOf(
