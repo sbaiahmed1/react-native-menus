@@ -20,7 +20,7 @@ using namespace facebook::react;
     UIColor *_checkedColor;
     UIColor *_uncheckedColor;
     BOOL _isChildViewButton;
-    NSMutableSet<UIView *> *_disabledViews;
+    NSHashTable<UIView *> *_disabledViews;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -33,7 +33,7 @@ using namespace facebook::react;
     if (self = [super initWithFrame:frame]) {
         static const auto defaultProps = std::make_shared<const MenuViewProps>();
         _props = defaultProps;
-        _disabledViews = [[NSMutableSet alloc] init];
+        _disabledViews = [NSHashTable weakObjectsHashTable];
         _isChildViewButton = NO;
     }
     
@@ -121,9 +121,13 @@ using namespace facebook::react;
 
 - (void)restoreUserInteractionForDisabledViews
 {
-    for (UIView *view in _disabledViews) {
-        // Only restore if the view is still in the view hierarchy
-        if (view.superview != nil) {
+    // Create a copy of the objects to iterate over since NSHashTable with weak references
+    // can have objects deallocated during iteration
+    NSArray<UIView *> *viewsToRestore = [_disabledViews allObjects];
+    
+    for (UIView *view in viewsToRestore) {
+        // The view might have been deallocated (weak reference), so check if it's still valid
+        if (view && view.superview != nil) {
             view.userInteractionEnabled = YES;
         }
     }
