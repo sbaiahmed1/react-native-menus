@@ -19,6 +19,8 @@ using namespace facebook::react;
     UIColor *_textColor;
     UIColor *_checkedColor;
     UIColor *_uncheckedColor;
+    BOOL _isChildViewButton;
+    NSMutableSet<UIView *> *_disabledViews;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -31,6 +33,8 @@ using namespace facebook::react;
     if (self = [super initWithFrame:frame]) {
         static const auto defaultProps = std::make_shared<const MenuViewProps>();
         _props = defaultProps;
+        _disabledViews = [[NSMutableSet alloc] init];
+        _isChildViewButton = NO;
     }
     
     return self;
@@ -42,10 +46,8 @@ using namespace facebook::react;
     if (index == 0) {
         // Clean up old child view if exists
         if (_childView && _childView != childComponentView) {
-            // Remove from our manual tracking without calling removeFromSuperview
-            // since React will handle the view hierarchy cleanup
-            _childView = nil;
-            _menuButton = nil;
+            [self cleanupMenuButton];
+            [self restoreUserInteractionForDisabledViews];
         }
         
         _childView = (UIView *)childComponentView;
@@ -64,8 +66,9 @@ using namespace facebook::react;
 {
     // Clean up our references before React unmounts
     if (index == 0 && _childView == childComponentView) {
+        [self cleanupMenuButton];
+        [self restoreUserInteractionForDisabledViews];
         _childView = nil;
-        _menuButton = nil;
     }
     
     // Let React handle the unmounting
@@ -78,9 +81,11 @@ using namespace facebook::react;
     if ([childView isKindOfClass:[UIButton class]]) {
         _menuButton = (UIButton *)childView;
         _menuButton.showsMenuAsPrimaryAction = YES;
+        _isChildViewButton = YES;
         [self updateMenuItems:_menuItems selectedIdentifier:nil];
     } else {
         // For non-button children, create an invisible button overlay to show the menu
+        _isChildViewButton = NO;
         [self disableUserInteractionRecursively:childView];
         
         // Create an invisible button that covers the entire view
@@ -105,10 +110,44 @@ using namespace facebook::react;
 
 - (void)disableUserInteractionRecursively:(UIView *)view
 {
-    view.userInteractionEnabled = NO;
+    if (view.userInteractionEnabled) {
+        [_disabledViews addObject:view];
+        view.userInteractionEnabled = NO;
+    }
     for (UIView *subview in view.subviews) {
         [self disableUserInteractionRecursively:subview];
     }
+}
+
+- (void)restoreUserInteractionForDisabledViews
+{
+    for (UIView *view in _disabledViews) {
+        // Only restore if the view is still in the view hierarchy
+        if (view.superview != nil) {
+            view.userInteractionEnabled = YES;
+        }
+    }
+    [_disabledViews removeAllObjects];
+}
+
+- (void)cleanupMenuButton
+{
+    if (_menuButton) {
+        // If it's not a child view button (i.e., it's our overlay button), remove it
+        if (!_isChildViewButton && _menuButton.superview == self) {
+            [_menuButton removeFromSuperview];
+        }
+        // Clear the menu to prevent any lingering references
+        _menuButton.menu = nil;
+        _menuButton = nil;
+    }
+    _isChildViewButton = NO;
+}
+
+- (void)dealloc
+{
+    [self cleanupMenuButton];
+    [self restoreUserInteractionForDisabledViews];
 }
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
