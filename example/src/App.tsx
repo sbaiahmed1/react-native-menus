@@ -12,7 +12,6 @@ import { MenuView, asSFSymbol } from 'react-native-menus';
 const App = () => {
   const [selectedTheme, setSelectedTheme] = useState('dark');
   const [selectedSort, setSelectedSort] = useState('date');
-  const [isDisabled, setIsDisabled] = useState(false);
 
   const handleMenuSelect = (event: {
     nativeEvent: { identifier: string; title: string };
@@ -188,196 +187,41 @@ const App = () => {
             </MenuView>
           </View>
 
-          {/* Example 5: Custom Trigger with Child View */}
+          {/* Example 6: Complex Menu */}
           <View style={styles.menuContainer}>
-            <Text style={styles.subtitle}>5. Custom Menu Trigger</Text>
-            <Text style={styles.hint}>Using custom child component</Text>
-            <MenuView
-              menuItems={[
-                {
-                  identifier: 'profile',
-                  title: 'View Profile',
-                  iosSymbol: asSFSymbol('person.circle'),
-                },
-                {
-                  identifier: 'settings',
-                  title: 'Settings',
-                  iosSymbol: asSFSymbol('gear'),
-                },
-                {
-                  identifier: 'help',
-                  title: 'Help & Support',
-                  iosSymbol: asSFSymbol('questionmark.circle'),
-                },
-                {
-                  identifier: 'logout',
-                  title: 'Logout',
-                  iosSymbol: asSFSymbol('rectangle.portrait.and.arrow.right'),
-                },
-              ]}
-              onMenuSelect={handleMenuSelect}
-            >
-              <View style={styles.customButton}>
-                <Text style={styles.customButtonText}>👤 Account Menu</Text>
-              </View>
-            </MenuView>
-          </View>
-
-          {/* Example 6: Long List with Scrolling */}
-          <View style={styles.menuContainer}>
-            <Text style={styles.subtitle}>6. Long List (Scrollable)</Text>
-            <MenuView
-              checkedColor="#5856D6"
-              menuItems={[
-                {
-                  identifier: 'opt1',
-                  title: 'Option 1',
-                  iosSymbol: asSFSymbol('1.circle'),
-                },
-                {
-                  identifier: 'opt2',
-                  title: 'Option 2',
-                  iosSymbol: asSFSymbol('2.circle'),
-                },
-                {
-                  identifier: 'opt3',
-                  title: 'Option 3',
-                  iosSymbol: asSFSymbol('3.circle'),
-                },
-                {
-                  identifier: 'opt4',
-                  title: 'Option 4',
-                  iosSymbol: asSFSymbol('4.circle'),
-                },
-                {
-                  identifier: 'opt5',
-                  title: 'Option 5',
-                  iosSymbol: asSFSymbol('5.circle'),
-                },
-                {
-                  identifier: 'opt6',
-                  title: 'Option 6',
-                  iosSymbol: asSFSymbol('6.circle'),
-                },
-                {
-                  identifier: 'opt7',
-                  title: 'Option 7',
-                  iosSymbol: asSFSymbol('7.circle'),
-                },
-                {
-                  identifier: 'opt8',
-                  title: 'Option 8',
-                  iosSymbol: asSFSymbol('8.circle'),
-                },
-                {
-                  identifier: 'opt9',
-                  title: 'Option 9',
-                  iosSymbol: asSFSymbol('9.circle'),
-                },
-                {
-                  identifier: 'opt10',
-                  title: 'Option 10',
-                  iosSymbol: asSFSymbol('10.circle'),
-                },
-                {
-                  identifier: 'opt11',
-                  title: 'Option 11',
-                  iosSymbol: asSFSymbol('11.circle'),
-                },
-                {
-                  identifier: 'opt12',
-                  title: 'Option 12',
-                  iosSymbol: asSFSymbol('12.circle'),
-                },
-                {
-                  identifier: 'opt13',
-                  title: 'Option 13',
-                  iosSymbol: asSFSymbol('13.circle'),
-                },
-                {
-                  identifier: 'opt14',
-                  title: 'Option 14',
-                  iosSymbol: asSFSymbol('14.circle'),
-                },
-                {
-                  identifier: 'opt15',
-                  title: 'Option 15',
-                  iosSymbol: asSFSymbol('15.circle'),
-                },
-                {
-                  identifier: 'opt16',
-                  title: 'Option 16',
-                  iosSymbol: asSFSymbol('16.circle'),
-                },
-                {
-                  identifier: 'opt17',
-                  title: 'Option 17',
-                  iosSymbol: asSFSymbol('17.circle'),
-                },
-                {
-                  identifier: 'opt18',
-                  title: 'Option 18',
-                  iosSymbol: asSFSymbol('18.circle'),
-                },
-                {
-                  identifier: 'opt19',
-                  title: 'Option 19',
-                  iosSymbol: asSFSymbol('19.circle'),
-                },
-                {
-                  identifier: 'opt20',
-                  title: 'Option 20',
-                  iosSymbol: asSFSymbol('20.circle'),
-                },
-              ]}
-              onMenuSelect={handleMenuSelect}
-            >
-              <View style={styles.menuButton}>
-                <Text style={styles.menuButtonText}>📋 Select Option</Text>
-              </View>
-            </MenuView>
-          </View>
-
-          {/* Example 7: Disabled Menu */}
-          <View style={styles.menuContainer}>
-            <Text style={styles.subtitle}>7. Disabled Menu</Text>
-            <Text onPress={() => setIsDisabled(false)} style={styles.hint}>
-              Current:{' '}
-              {isDisabled ? 'Disabled, (Click me to re-enable)' : 'Enabled'}
+            <Text style={styles.subtitle}>6. Complex Menu</Text>
+            <Text style={styles.hint}>
+              Title, Subtitles, Destructive Items, Theme
             </Text>
             <MenuView
-              disabled={isDisabled}
+              title="Advanced Options"
+              themeVariant="dark"
               menuItems={[
                 {
-                  identifier: 'enable',
-                  title: 'Enable Menu',
-                  iosSymbol: asSFSymbol('checkmark.circle'),
+                  identifier: 'info',
+                  title: 'Information',
+                  subtitle: 'View details about this item',
+                  iosSymbol: asSFSymbol('info.circle'),
                 },
                 {
-                  identifier: 'disable',
-                  title: 'Disable Menu',
-                  iosSymbol: asSFSymbol('xmark.circle'),
+                  identifier: 'share',
+                  title: 'Share',
+                  subtitle: 'Share with friends',
+                  iosSymbol: asSFSymbol('square.and.arrow.up'),
+                },
+                {
+                  identifier: 'delete',
+                  title: 'Delete Item',
+                  subtitle: 'This action cannot be undone',
+                  iosSymbol: asSFSymbol('trash'),
+                  destructive: true,
                 },
               ]}
-              onMenuSelect={(event) => {
-                const { identifier } = event.nativeEvent;
-                setIsDisabled(identifier === 'disable');
-                Alert.alert(
-                  'Menu Selection',
-                  `Menu ${identifier === 'disable' ? 'disabled' : 'enabled'}`
-                );
-              }}
+              onMenuSelect={handleMenuSelect}
             >
-              <View
-                style={[styles.menuButton, isDisabled && styles.disabledButton]}
-              >
-                <Text
-                  style={[
-                    styles.menuButtonText,
-                    isDisabled && styles.disabledText,
-                  ]}
-                >
-                  {isDisabled ? '🔒 Disabled Menu' : '🔓 Enabled Menu'}
+              <View style={[styles.menuButton, { backgroundColor: '#333' }]}>
+                <Text style={[styles.menuButtonText, { color: '#fff' }]}>
+                  🛠️ Advanced Menu (Dark)
                 </Text>
               </View>
             </MenuView>

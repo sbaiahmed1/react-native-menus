@@ -15,6 +15,16 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         return MenuView(reactContext)
     }
 
+    @ReactProp(name = "title")
+    fun setTitle(view: MenuView, title: String?) {
+        view.setTitle(title)
+    }
+
+    @ReactProp(name = "themeVariant")
+    fun setThemeVariant(view: MenuView, themeVariant: String?) {
+        view.setThemeVariant(themeVariant)
+    }
+
     @ReactProp(name = "color")
     fun setColor(view: MenuView, color: String?) {
         view.setColor(color)
