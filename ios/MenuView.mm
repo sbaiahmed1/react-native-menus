@@ -187,6 +187,18 @@ using namespace facebook::react;
         [self updateDisabledState];
     }
 
+    // Update themeVariant
+    if (oldViewProps.themeVariant != newViewProps.themeVariant) {
+        NSString *themeVariant = [[NSString alloc] initWithUTF8String:newViewProps.themeVariant.c_str()];
+        if ([themeVariant isEqualToString:@"dark"]) {
+            self.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+        } else if ([themeVariant isEqualToString:@"light"]) {
+            self.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
+        } else {
+            self.overrideUserInterfaceStyle = UIUserInterfaceStyleUnspecified;
+        }
+    }
+
     // Update menu items
     bool menuItemsChanged = (oldViewProps.menuItems.size() != newViewProps.menuItems.size()) || (_menuItems == nil);
 
@@ -199,6 +211,9 @@ using namespace facebook::react;
             #ifdef __cplusplus
             // Also detect icon changes so menu can be rebuilt with updated images
             contentChanged = contentChanged || (newItem.iosSymbol != oldItem.iosSymbol);
+            // Detect new properties
+            contentChanged = contentChanged || (newItem.subtitle != oldItem.subtitle);
+            contentChanged = contentChanged || (newItem.destructive != oldItem.destructive);
             #endif
             if (contentChanged) {
                 menuItemsChanged = true;
@@ -220,15 +235,30 @@ using namespace facebook::react;
             NSString *identifier = [[NSString alloc] initWithUTF8String:item.identifier.c_str()];
             NSString *title = [[NSString alloc] initWithUTF8String:item.title.c_str()];
             NSString *symbol = nil;
+            NSString *subtitle = nil;
+            BOOL destructive = NO;
+            
             #ifdef __cplusplus
             if (!item.iosSymbol.empty()) {
                 symbol = [[NSString alloc] initWithUTF8String:item.iosSymbol.c_str()];
             }
+            if (!item.subtitle.empty()) {
+                subtitle = [[NSString alloc] initWithUTF8String:item.subtitle.c_str()];
+            }
+            destructive = item.destructive;
             #endif
+            
             NSMutableDictionary *dict = [@{ @"identifier": identifier, @"title": title } mutableCopy];
             if (symbol) {
                 dict[@"iosSymbol"] = symbol;
             }
+            if (subtitle) {
+                dict[@"subtitle"] = subtitle;
+            }
+            if (destructive) {
+                dict[@"destructive"] = @(YES);
+            }
+            
             [items addObject:dict];
         }
         _menuItems = [items copy];
@@ -263,6 +293,9 @@ using namespace facebook::react;
         NSString *identifier = item[@"identifier"];
         NSString *title = item[@"title"];
         NSString *symbol = item[@"iosSymbol"];
+        NSString *subtitle = item[@"subtitle"];
+        BOOL destructive = [item[@"destructive"] boolValue];
+        
         UIImage *image = nil;
         if (symbol && symbol.length > 0) {
             image = [UIImage systemImageNamed:symbol];
@@ -275,6 +308,21 @@ using namespace facebook::react;
             [self selectMenuItem:identifier title:title];
         }];
 
+        // Set attributes
+        if (destructive) {
+            action.attributes = UIMenuElementAttributesDestructive;
+        }
+        
+        // Set subtitle if available (iOS 15+)
+        if (subtitle && subtitle.length > 0) {
+            if (@available(iOS 15.0, *)) {
+                action.subtitle = subtitle;
+            } else {
+                // Fallback for older iOS versions
+                action.discoverabilityTitle = subtitle;
+            }
+        }
+
         // Set state based on current selection (controlled via props)
         if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [identifier isEqualToString:selectedIdentifier]) {
             action.state = UIMenuElementStateOn;
@@ -283,7 +331,21 @@ using namespace facebook::react;
         [actions addObject:action];
     }
 
-    UIMenu *menu = [UIMenu menuWithTitle:@"" children:actions];
+    // Create menu
+    UIMenu *menu;
+    
+    // If title is provided in props, use it (need to store it first or pass it down)
+    // For now, since title was removed from props based on user request, we use empty string
+    // But if we wanted to support title later:
+    NSString *menuTitle = @"";
+    if (_props) {
+        const auto &viewProps = *std::static_pointer_cast<MenuViewProps const>(_props);
+        if (!viewProps.title.empty()) {
+             menuTitle = [[NSString alloc] initWithUTF8String:viewProps.title.c_str()];
+        }
+    }
+    
+    menu = [UIMenu menuWithTitle:menuTitle children:actions];
     _menuButton.menu = menu;
 }
 

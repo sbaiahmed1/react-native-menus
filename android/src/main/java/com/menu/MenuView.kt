@@ -23,7 +23,9 @@ import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
 class MenuView(context: Context) : FrameLayout(context) {
-    private var menuItems: List<Map<String, String>> = emptyList()
+    private var themeVariant: String = "system"
+    private var title: String = ""
+    private var menuItems: List<Map<String, Any>> = emptyList()
     private var selectedItemIdentifier: String? = null
     private var checkedColor: String = "#007AFF" // Default iOS blue
     private var uncheckedColor: String = "#8E8E93" // Default iOS gray
@@ -105,17 +107,64 @@ class MenuView(context: Context) : FrameLayout(context) {
         isFocusable = !disabled
     }
 
+    fun setTitle(title: String?) {
+        this.title = title ?: ""
+    }
+
+    fun setThemeVariant(themeVariant: String?) {
+        this.themeVariant = themeVariant ?: "system"
+    }
+
+    private fun getBackgroundColor(): Int {
+        return when (themeVariant) {
+            "dark" -> Color.parseColor("#1C1C1E") // iOS Dark Gray
+            "light" -> Color.WHITE
+            else -> {
+                val currentNightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                    Color.parseColor("#1C1C1E")
+                } else {
+                    Color.WHITE
+                }
+            }
+        }
+    }
+
+    private fun getTextColor(): Int {
+        return when (themeVariant) {
+            "dark" -> Color.WHITE
+            "light" -> Color.BLACK
+            else -> {
+                val currentNightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                    Color.WHITE
+                } else {
+                    Color.BLACK
+                }
+            }
+        }
+    }
+
     fun setMenuItems(menuItems: ReadableArray?) {
-        val items = mutableListOf<Map<String, String>>()
+        val items = mutableListOf<Map<String, Any>>()
         
         menuItems?.let { array ->
             for (i in 0 until array.size()) {
                 val item = array.getMap(i)
                 if (item != null) {
-                    val menuItem = mapOf(
+                    val menuItem = mutableMapOf<String, Any>(
                         "identifier" to (item.getString("identifier") ?: ""),
                         "title" to (item.getString("title") ?: "")
                     )
+                    
+                    if (item.hasKey("subtitle")) {
+                        menuItem["subtitle"] = item.getString("subtitle") ?: ""
+                    }
+                    
+                    if (item.hasKey("destructive")) {
+                        menuItem["destructive"] = item.getBoolean("destructive")
+                    }
+
                     items.add(menuItem)
                 }
             }
@@ -178,26 +227,38 @@ class MenuView(context: Context) : FrameLayout(context) {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             
-            // Set background with rounded corners - always white will add new prop soon
+            // Set background with rounded corners - based on theme
             val drawable = android.graphics.drawable.GradientDrawable().apply {
-                setColor(Color.WHITE)
+                setColor(getBackgroundColor())
                 cornerRadius = 24f
             }
             background = drawable
         }
         
-        // Header - removed as per user request
-        // val headerText = TextView(context).apply {
-        //     text = "--sous-thème--"
-        //     setTextColor(Color.WHITE)
-        //     textSize = 18f
-        //     setPadding(60, 40, 60, 40)
-        //     gravity = android.view.Gravity.CENTER
-        //     setTypeface(null, android.graphics.Typeface.BOLD)
-        // }
-        // container.addView(headerText)
+        // Header
+        if (title.isNotEmpty()) {
+            val headerText = TextView(context).apply {
+                text = title
+                setTextColor(getTextColor())
+                textSize = 18f
+                setPadding(60, 40, 60, 40)
+                gravity = android.view.Gravity.CENTER
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            container.addView(headerText)
+            
+            // Add separator after title
+            val separator = View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (0.5 * context.resources.displayMetrics.density).toInt()
+                )
+                setBackgroundColor(if (themeVariant == "dark") Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
+            }
+            container.addView(separator)
+        }
         
-        // Create a ScrollView to contain the radio group with dynamic height
+        // Create a ScrollView to contain the items with dynamic height
         val displayMetrics = context.resources.displayMetrics
         // Max 90% of screen height - allows near full screen, only scrolls when content exceeds this
         val maxScrollHeight = (displayMetrics.heightPixels * 0.9).toInt()
@@ -239,14 +300,84 @@ class MenuView(context: Context) : FrameLayout(context) {
         }
         
         menuItems.forEachIndexed { index, item ->
-            val radioButton = RadioButton(context).apply {
-                text = item["title"]
-                setTextColor(Color.BLACK) // Changed to black for white background
-                textSize = 16f
-                setPadding(0, 30, 0, 30)
-                isChecked = item["identifier"] == selectedItemIdentifier
+            // We'll create a custom view that mimics a RadioButton but allows rich content
+            // However, since the user specifically requested "RadioButton", we will use a RadioButton
+            // but we'll need to customize it heavily or wrap it to support subtitle/icon.
+            // A standard RadioButton in Android is a TextView with a button drawable. 
+            // It's hard to add a subtitle/icon *inside* the RadioButton text easily without Spannables or custom compound drawables.
+            
+            // To respect "restore RadioButton" but also "rich features", we can use a RadioButton 
+            // but set its text to empty and put it inside a container with our rich views, 
+            // OR we can just use RadioButton and try to use SpannableString for title/subtitle 
+            // and compound drawables for icons.
+            
+            // Let's try the container approach where the RadioButton is the "checkmark" 
+            // and the whole row is clickable.
+            
+            val itemContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 16, 0, 16)
+                }
+                gravity = Gravity.CENTER_VERTICAL
+                isClickable = true
+                isFocusable = true
                 
-                // Custom radio button styling with dynamic colors
+                setOnClickListener {
+                    selectMenuItem(item["identifier"] as String, item["title"] as String)
+                    currentDialog?.dismiss()
+                }
+            }
+
+            // Text Container (Title + Subtitle)
+            val textContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1.0f
+                )
+            }
+
+            val titleView = TextView(context).apply {
+                text = item["title"] as String
+                textSize = 16f
+                
+                val isDestructive = item["destructive"] as? Boolean == true
+                if (isDestructive) {
+                    setTextColor(Color.parseColor("#FF3B30"))
+                } else {
+                    setTextColor(getTextColor())
+                }
+            }
+            textContainer.addView(titleView)
+
+            val subtitle = item["subtitle"] as? String
+            if (!subtitle.isNullOrEmpty()) {
+                val subtitleView = TextView(context).apply {
+                    text = subtitle
+                    textSize = 14f
+                    setTextColor(Color.parseColor("#8E8E93")) // Gray
+                    setPadding(0, 4, 0, 0)
+                }
+                textContainer.addView(subtitleView)
+            }
+
+            itemContainer.addView(textContainer)
+
+            // RadioButton as the selection indicator
+            val radioButton = RadioButton(context).apply {
+                isChecked = item["identifier"] == selectedItemIdentifier
+                isClickable = false // Let the container handle the click
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                
+                // Custom tinting
                 val colorStateList = android.content.res.ColorStateList(
                     arrayOf(
                         intArrayOf(android.R.attr.state_checked),
@@ -258,33 +389,21 @@ class MenuView(context: Context) : FrameLayout(context) {
                     )
                 )
                 buttonTintList = colorStateList
-                
-                // Make sure text wraps properly for long content
-                layoutParams = RadioGroup.LayoutParams(
-                    RadioGroup.LayoutParams.MATCH_PARENT,
-                    RadioGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, 8, 0, 8)
-                }
-                
-                setOnClickListener {
-                    selectMenuItem(item["identifier"] ?: "", item["title"] ?: "")
-                    // Close dialog immediately when item is selected
-                    currentDialog?.dismiss()
-                }
             }
-            radioGroup.addView(radioButton)
+            itemContainer.addView(radioButton)
+
+            radioGroup.addView(itemContainer)
             
             // Add divider between items (except after the last item)
             if (index < menuItems.size - 1) {
                 val divider = View(context).apply {
-                    layoutParams = RadioGroup.LayoutParams(
-                        RadioGroup.LayoutParams.MATCH_PARENT,
-                        (0.5 * context.resources.displayMetrics.density).toInt() // 0.5px converted to dp
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        (0.5 * context.resources.displayMetrics.density).toInt()
                     ).apply {
-                        setMargins(0, 8, 0, 8) // Small margins around divider
+                        setMargins(0, 8, 0, 8)
                     }
-                    setBackgroundColor(Color.parseColor("#E0E0E0")) // Light gray color
+                    setBackgroundColor(if (themeVariant == "dark") Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
                 }
                 radioGroup.addView(divider)
             }
