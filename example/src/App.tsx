@@ -10,7 +10,9 @@ import {
 import { MenuView, asSFSymbol } from 'react-native-menus';
 
 const App = () => {
-  const [selectedTheme, setSelectedTheme] = useState('dark');
+  const [selectedTheme, setSelectedTheme] = useState<
+    'light' | 'dark' | 'system'
+  >('dark');
   const [selectedSort, setSelectedSort] = useState('date');
 
   const handleMenuSelect = (event: {
@@ -24,7 +26,9 @@ const App = () => {
   const handleThemeSelect = (event: {
     nativeEvent: { identifier: string; title: string };
   }) => {
-    setSelectedTheme(event.nativeEvent.identifier);
+    setSelectedTheme(
+      event.nativeEvent.identifier as 'light' | 'dark' | 'system'
+    );
   };
 
   const handleSortSelect = (event: {
@@ -49,6 +53,8 @@ const App = () => {
             <MenuView
               checkedColor="#007AFF"
               uncheckedColor="#8E8E93"
+              themeVariant={selectedTheme}
+              androidDisplayMode="tooltip"
               selectedIdentifier={selectedTheme}
               menuItems={[
                 {
@@ -223,6 +229,37 @@ const App = () => {
                 <Text style={[styles.menuButtonText, { color: '#fff' }]}>
                   🛠️ Advanced Menu (Dark)
                 </Text>
+              </View>
+            </MenuView>
+          </View>
+
+          {/* Example 7: Android Tooltip */}
+          <View style={styles.menuContainer}>
+            <Text style={styles.subtitle}>7. Android Tooltip</Text>
+            <Text style={styles.hint}>
+              Uses native PopupMenu on Android (Dialog default)
+            </Text>
+            <MenuView
+              menuItems={[
+                {
+                  identifier: 'edit',
+                  title: 'Edit',
+                },
+                {
+                  identifier: 'duplicate',
+                  title: 'Duplicate',
+                },
+                {
+                  identifier: 'delete',
+                  title: 'Delete',
+                  destructive: true,
+                },
+              ]}
+              androidDisplayMode={'tooltip'}
+              onMenuSelect={handleMenuSelect}
+            >
+              <View style={styles.menuButton}>
+                <Text style={styles.menuButtonText}>⋮ Tooltip Menu</Text>
               </View>
             </MenuView>
           </View>

@@ -26,6 +26,7 @@ export interface NativeProps extends ViewProps {
   menuItems?: ReadonlyArray<MenuItem>;
   selectedIdentifier?: string;
   disabled?: boolean;
+  androidDisplayMode?: WithDefault<'dialog' | 'tooltip', 'dialog'>;
   onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
 }
 

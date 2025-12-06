@@ -32,6 +32,7 @@ class MenuView(context: Context) : FrameLayout(context) {
     private var uncheckedColor: String = "#8E8E93" // Default iOS gray
     private var textColor: String? = null
     private var disabled: Boolean = false
+    private var androidDisplayMode: String? = "dialog"
 
     init {
         setupMenuTrigger()
@@ -67,6 +68,11 @@ class MenuView(context: Context) : FrameLayout(context) {
         return true
     }
 
+    fun setAndroidDisplayMode(mode: String?) {
+        // Store text color for potential future use with child views
+        this.androidDisplayMode = mode
+    }
+    
     fun setColor(color: String?) {
         // Store text color for potential future use with child views
         textColor = color
@@ -174,6 +180,73 @@ class MenuView(context: Context) : FrameLayout(context) {
     private var currentDialog: Dialog? = null
     
     private fun showMenu() {
+        // Check if any item requests tooltip mode
+        val useTooltip =  androidDisplayMode == "tooltip"
+        
+        if (useTooltip) {
+            showTooltipMenu()
+        } else {
+            showDialogMenu()
+        }
+    }
+    
+    private fun showTooltipMenu() {
+        // Apply theme wrapper for PopupMenu
+        val contextThemeWrapper = android.view.ContextThemeWrapper(
+            context, 
+            if (themeVariant == "dark") android.R.style.Theme_DeviceDefault_NoActionBar 
+            else android.R.style.Theme_DeviceDefault_Light_NoActionBar
+        )
+        
+        val popup = android.widget.PopupMenu(contextThemeWrapper, this)
+        
+        // Add items to the menu
+        menuItems.forEachIndexed { index, item ->
+            val title = item["title"] as String
+            val identifier = item["identifier"] as String
+            val destructive = item["destructive"] as? Boolean == true
+            
+            val menuItem = popup.menu.add(0, index, index, title)
+            
+            // Handle destructive items (Red text)
+            if (destructive) {
+                val spannableTitle = android.text.SpannableString(title)
+                spannableTitle.setSpan(
+                    android.text.style.ForegroundColorSpan(Color.RED),
+                    0,
+                    spannableTitle.length,
+                    android.text.Spannable.SPAN_INCLUSIVE_INCLUSIVE
+                )
+                menuItem.title = spannableTitle
+            }
+            
+            // Handle selection state
+            if (identifier == selectedItemIdentifier) {
+                menuItem.isCheckable = true
+                menuItem.isChecked = true
+            }
+        }
+        
+        // Force show icons/checkmarks if possible (requires internal API or Android Q+)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            popup.setForceShowIcon(true)
+        }
+        
+        popup.setOnMenuItemClickListener { menuItem ->
+            val index = menuItem.itemId
+            if (index >= 0 && index < menuItems.size) {
+                val item = menuItems[index]
+                selectMenuItem(item["identifier"] as String, item["title"] as String)
+                true
+            } else {
+                false
+            }
+        }
+        
+        popup.show()
+    }
+
+    private fun showDialogMenu() {
         val dialogView = createModalMenuView()
         
         currentDialog = Dialog(context).apply {
