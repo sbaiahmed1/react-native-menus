@@ -189,13 +189,17 @@ using namespace facebook::react;
 
     // Update themeVariant
     if (oldViewProps.themeVariant != newViewProps.themeVariant) {
-        NSString *themeVariant = [[NSString alloc] initWithUTF8String:newViewProps.themeVariant.c_str()];
-        if ([themeVariant isEqualToString:@"dark"]) {
-            self.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
-        } else if ([themeVariant isEqualToString:@"light"]) {
-            self.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
-        } else {
-            self.overrideUserInterfaceStyle = UIUserInterfaceStyleUnspecified;
+        switch (newViewProps.themeVariant) {
+            case MenuViewThemeVariant::Dark:
+                self.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+                break;
+            case MenuViewThemeVariant::Light:
+                self.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
+                break;
+            case MenuViewThemeVariant::System:
+            default:
+                self.overrideUserInterfaceStyle = UIUserInterfaceStyleUnspecified;
+                break;
         }
     }
 
