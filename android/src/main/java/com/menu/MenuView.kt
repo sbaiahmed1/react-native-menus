@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -115,33 +116,30 @@ class MenuView(context: Context) : FrameLayout(context) {
         this.themeVariant = themeVariant ?: "system"
     }
 
-    private fun getBackgroundColor(): Int {
+    private fun isDarkMode(): Boolean {
         return when (themeVariant) {
-            "dark" -> Color.parseColor("#1C1C1E") // iOS Dark Gray
-            "light" -> Color.WHITE
+            "dark" -> true
+            "light" -> false
             else -> {
                 val currentNightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-                    Color.parseColor("#1C1C1E")
-                } else {
-                    Color.WHITE
-                }
+                currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
             }
         }
     }
 
+    private fun getBackgroundColor(): Int {
+        return if (isDarkMode()) {
+            Color.parseColor("#1C1C1E") // iOS Dark Gray
+        } else {
+            Color.WHITE
+        }
+    }
+
     private fun getTextColor(): Int {
-        return when (themeVariant) {
-            "dark" -> Color.WHITE
-            "light" -> Color.BLACK
-            else -> {
-                val currentNightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-                    Color.WHITE
-                } else {
-                    Color.BLACK
-                }
-            }
+        return if (isDarkMode()) {
+            Color.WHITE
+        } else {
+            Color.BLACK
         }
     }
 
@@ -253,7 +251,7 @@ class MenuView(context: Context) : FrameLayout(context) {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     (0.5 * context.resources.displayMetrics.density).toInt()
                 )
-                setBackgroundColor(if (themeVariant == "dark") Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
+                setBackgroundColor(if (isDarkMode()) Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
             }
             container.addView(separator)
         }
@@ -313,6 +311,37 @@ class MenuView(context: Context) : FrameLayout(context) {
             
             // Let's try the container approach where the RadioButton is the "checkmark" 
             // and the whole row is clickable.
+
+            // RadioButton as the selection indicator - created first to be referenced in itemContainer listener
+            val radioButton = RadioButton(context).apply {
+                isChecked = item["identifier"] == selectedItemIdentifier
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                
+                // Custom tinting
+                val colorStateList = android.content.res.ColorStateList(
+                    arrayOf(
+                        intArrayOf(android.R.attr.state_checked),
+                        intArrayOf(-android.R.attr.state_checked)
+                    ),
+                    intArrayOf(
+                        Color.parseColor(checkedColor),
+                        Color.parseColor(uncheckedColor)
+                    )
+                )
+                buttonTintList = colorStateList
+
+                // Handle click directly on radio button (though hidden from accessibility, it might still be clickable)
+                setOnClickListener {
+                    selectMenuItem(item["identifier"] as String, item["title"] as String)
+                    currentDialog?.dismiss()
+                }
+
+                // Hide from accessibility as the container will represent the item
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
             
             val itemContainer = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -327,8 +356,17 @@ class MenuView(context: Context) : FrameLayout(context) {
                 isFocusable = true
                 
                 setOnClickListener {
-                    selectMenuItem(item["identifier"] as String, item["title"] as String)
-                    currentDialog?.dismiss()
+                    radioButton.performClick()
+                }
+
+                // Accessibility delegate to make the row act like a radio button
+                accessibilityDelegate = object : View.AccessibilityDelegate() {
+                    override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+                        super.onInitializeAccessibilityNodeInfo(host, info)
+                        info.className = RadioButton::class.java.name
+                        info.isCheckable = true
+                        info.isChecked = radioButton.isChecked
+                    }
                 }
             }
 
@@ -367,29 +405,6 @@ class MenuView(context: Context) : FrameLayout(context) {
             }
 
             itemContainer.addView(textContainer)
-
-            // RadioButton as the selection indicator
-            val radioButton = RadioButton(context).apply {
-                isChecked = item["identifier"] == selectedItemIdentifier
-                isClickable = false // Let the container handle the click
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                
-                // Custom tinting
-                val colorStateList = android.content.res.ColorStateList(
-                    arrayOf(
-                        intArrayOf(android.R.attr.state_checked),
-                        intArrayOf(-android.R.attr.state_checked)
-                    ),
-                    intArrayOf(
-                        Color.parseColor(checkedColor),
-                        Color.parseColor(uncheckedColor)
-                    )
-                )
-                buttonTintList = colorStateList
-            }
             itemContainer.addView(radioButton)
 
             radioGroup.addView(itemContainer)
@@ -403,7 +418,7 @@ class MenuView(context: Context) : FrameLayout(context) {
                     ).apply {
                         setMargins(0, 8, 0, 8)
                     }
-                    setBackgroundColor(if (themeVariant == "dark") Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
+                    setBackgroundColor(if (isDarkMode()) Color.parseColor("#38383A") else Color.parseColor("#E0E0E0"))
                 }
                 radioGroup.addView(divider)
             }
