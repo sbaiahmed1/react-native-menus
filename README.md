@@ -213,6 +213,7 @@ const styles = StyleSheet.create({
 |------|------|---------|-------------|
 | `menuItems` | `MenuItem[]` | `[]` | Array of menu items to display |
 | `title` | `string` | `undefined` | Title of the menu (Android only) |
+| `androidDisplayMode` | `'dialog' \| 'tooltip'` | `'dialog'` | Display mode for the menu on Android (Android only) |
 | `themeVariant` | `'light' \| 'dark' \| 'system'` | `'system'` | Theme variant for the menu background and text (Android only) |
 | `selectedIdentifier` | `string` | `undefined` | Identifier of the currently selected item |
 | `checkedColor` | `string` | `'#007AFF'` | Color of the checkmark for selected items |
