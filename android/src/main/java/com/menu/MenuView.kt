@@ -69,7 +69,6 @@ class MenuView(context: Context) : FrameLayout(context) {
     }
 
     fun setAndroidDisplayMode(mode: String?) {
-        // Store text color for potential future use with child views
         this.androidDisplayMode = mode
     }
     
@@ -180,7 +179,7 @@ class MenuView(context: Context) : FrameLayout(context) {
     private var currentDialog: Dialog? = null
     
     private fun showMenu() {
-        // Check if any item requests tooltip mode
+        // Check if tooltip mode is requested
         val useTooltip =  androidDisplayMode == "tooltip"
         
         if (useTooltip) {
