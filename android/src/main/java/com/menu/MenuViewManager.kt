@@ -55,6 +55,11 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         view.setDisabled(disabled)
     }
 
+    @ReactProp(name = "androidDisplayMode")
+    fun setAndroidDisplayMode(view: MenuView, androidDisplayMode: String?) {
+        view.setAndroidDisplayMode(androidDisplayMode)
+    }
+
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> {
         return mapOf(
             "onMenuSelect" to mapOf(
