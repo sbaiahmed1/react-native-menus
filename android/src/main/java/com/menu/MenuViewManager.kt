@@ -60,6 +60,14 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         view.setAndroidDisplayMode(androidDisplayMode)
     }
 
+    override fun receiveCommand(root: MenuView, commandId: String, args: com.facebook.react.bridge.ReadableArray?) {
+        when (commandId) {
+            "open" -> root.open()
+            "close" -> root.close()
+            else -> super.receiveCommand(root, commandId, args)
+        }
+    }
+
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> {
         return mapOf(
             "onMenuSelect" to mapOf(

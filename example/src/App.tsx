@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Alert,
+  Button,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 import { MenuView, asSFSymbol } from 'react-native-menus';
 
 const App = () => {
+  const themeMenuRef = useRef<any>(null);
   const [selectedTheme, setSelectedTheme] = useState<
     'light' | 'dark' | 'system'
   >('dark');
@@ -50,7 +52,12 @@ const App = () => {
           <View style={styles.menuContainer}>
             <Text style={styles.subtitle}>1. Theme Selector</Text>
             <Text style={styles.hint}>Current: {selectedTheme}</Text>
+            <Button
+              title="Open Programmatically"
+              onPress={() => themeMenuRef.current?.open()}
+            />
             <MenuView
+              ref={themeMenuRef}
               checkedColor="#007AFF"
               uncheckedColor="#8E8E93"
               themeVariant={selectedTheme}
