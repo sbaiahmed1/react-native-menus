@@ -205,6 +205,42 @@ const styles = StyleSheet.create({
 });
 ```
 
+### Imperative Usage (Programmatic Open/Close)
+
+You can use a ref to open or close the menu programmatically.
+
+```tsx
+import React, { useRef } from 'react';
+import { View, Button } from 'react-native';
+import { MenuView, type NativeRef } from 'react-native-menus';
+
+const App = () => {
+  const menuRef = useRef<NativeRef>(null);
+
+  return (
+    <View>
+      <Button 
+        title="Open Menu" 
+        onPress={() => menuRef.current?.open()} 
+      />
+      
+      <MenuView
+        ref={menuRef}
+        menuItems={[
+          { identifier: 'item1', title: 'Item 1' },
+          { identifier: 'item2', title: 'Item 2' },
+        ]}
+        onMenuSelect={(event) => {
+          console.log('Selected:', event.nativeEvent.title);
+        }}
+      >
+        <View style={{ width: 100, height: 100, backgroundColor: 'red' }} />
+      </MenuView>
+    </View>
+  );
+};
+```
+
 ## API Reference
 
 ### MenuView Props

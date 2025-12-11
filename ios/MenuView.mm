@@ -454,6 +454,28 @@ using namespace facebook::react;
                            alpha:1.0];
 }
 
+#pragma mark - RCTMenuViewViewProtocol
+
+- (void)open
+{
+    if (_menuButton) {
+        if (_isChildViewButton) {
+             [_menuButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+        } else {
+             // For overlay button, we also simulate touch
+             [_menuButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+        }
+    }
+}
+
+- (void)close
+{
+    // Closing the menu programmatically is not directly supported by UIButton/UIMenu
+    // This is a best-effort attempt or no-op
+    // One hack is to remove the menu and re-add it, but that might not dismiss the presented view.
+    // So we leave it empty for now or maybe log a warning.
+}
+
 @end
 
 Class<RCTComponentViewProtocol> MenuViewCls(void)

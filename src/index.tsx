@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import React from 'react';
+import React, { useRef, useImperativeHandle } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type {
   MenuItem,
   MenuSelectEvent,
   MenuViewProps as NativeMenuViewProps,
 } from './MenuViewNativeComponent';
-import NativeMenuView from './MenuViewNativeComponent';
+import NativeMenuView, { Commands } from './MenuViewNativeComponent';
 
 export type { MenuItem, MenuSelectEvent };
 
@@ -19,33 +19,54 @@ export interface MenuViewProps extends Omit<NativeMenuViewProps, 'children'> {
   disabled?: boolean;
 }
 
-export const MenuView = React.forwardRef<any, MenuViewProps>((props, ref) => {
-  const { children, ...nativeProps } = props;
+export interface NativeRef {
+  open: () => void;
+  close: () => void;
+}
 
-  if (Platform.OS === 'ios') {
+export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
+  (props, ref) => {
+    const { children, ...nativeProps } = props;
+    const nativeRef = useRef<React.ElementRef<typeof NativeMenuView>>(null);
+
+    useImperativeHandle(ref, () => ({
+      open: () => {
+        if (nativeRef.current) {
+          Commands.open(nativeRef.current);
+        }
+      },
+      close: () => {
+        if (nativeRef.current) {
+          Commands.close(nativeRef.current);
+        }
+      },
+    }));
+
+    if (Platform.OS === 'ios') {
+      return (
+        <NativeMenuView ref={nativeRef} {...nativeProps}>
+          {children}
+        </NativeMenuView>
+      );
+    }
+
     return (
-      <NativeMenuView ref={ref} {...nativeProps}>
-        {children}
-      </NativeMenuView>
+      <View style={styles.relative}>
+        <NativeMenuView
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              zIndex: 1,
+            },
+          ]}
+          ref={nativeRef}
+          {...nativeProps}
+        />
+        <View>{children}</View>
+      </View>
     );
   }
-
-  return (
-    <View style={styles.relative}>
-      <NativeMenuView
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            zIndex: 1,
-          },
-        ]}
-        ref={ref}
-        {...nativeProps}
-      />
-      <View>{children}</View>
-    </View>
-  );
-});
+);
 
 MenuView.displayName = 'MenuView';
 

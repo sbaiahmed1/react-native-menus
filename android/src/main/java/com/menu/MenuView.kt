@@ -177,6 +177,18 @@ class MenuView(context: Context) : FrameLayout(context) {
     }
 
     private var currentDialog: Dialog? = null
+    private var currentPopup: android.widget.PopupMenu? = null
+    
+    fun open() {
+        if (!disabled) {
+            showMenu()
+        }
+    }
+
+    fun close() {
+        currentDialog?.dismiss()
+        currentPopup?.dismiss()
+    }
     
     private fun showMenu() {
         // Check if tooltip mode is requested
@@ -198,6 +210,7 @@ class MenuView(context: Context) : FrameLayout(context) {
         )
         
         val popup = android.widget.PopupMenu(contextThemeWrapper, this)
+        currentPopup = popup
         
         // Add items to the menu
         menuItems.forEachIndexed { index, item ->
@@ -240,6 +253,10 @@ class MenuView(context: Context) : FrameLayout(context) {
             } else {
                 false
             }
+        }
+        
+        popup.setOnDismissListener {
+            currentPopup = null
         }
         
         popup.show()
