@@ -116,8 +116,18 @@ The `package.json` file contains various scripts for common tasks:
 - `yarn lint`: lint files with ESLint.
 - `yarn test`: run unit tests with Jest.
 - `yarn example start`: start the Metro server for the example app.
-- `yarn example android`: run the example app on Android.
-- `yarn example ios`: run the example app on iOS.
+- `yarn example prebuild`: regenerate the example's native projects from `example/app.json`.
+- `yarn example android`: build and run the example app on Android.
+- `yarn example ios`: build and run the example app on iOS.
+
+The example app is an [Expo](https://docs.expo.dev/) app that uses [continuous native
+generation](https://docs.expo.dev/workflow/continuous-native-generation/): `example/ios` and
+`example/android` are **not** checked into git, and are created on demand by `expo prebuild`.
+`yarn example ios` / `yarn example android` run prebuild for you, so you only need
+`yarn example prebuild` directly when you want to regenerate the native projects from scratch.
+
+Because this library ships custom Fabric native code, the example **cannot run in Expo Go** — it
+needs a development build, which is what `yarn example ios` / `yarn example android` produce.
 
 ### Sending a pull request
 

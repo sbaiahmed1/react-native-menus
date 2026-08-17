@@ -1,4 +1,4 @@
-import type { ViewProps, HostComponent } from 'react-native';
+import type { ViewProps, HostInstance } from 'react-native';
 import { codegenNativeComponent, codegenNativeCommands } from 'react-native';
 import type { BubblingEventHandler } from 'react-native/Libraries/Types/CodegenTypes';
 import type { WithDefault } from 'react-native/Libraries/Types/CodegenTypesNamespace';
@@ -30,16 +30,23 @@ export interface NativeProps extends ViewProps {
   onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
 }
 
-type ComponentType = HostComponent<NativeProps>;
+const MenuViewNativeComponent = codegenNativeComponent<NativeProps>('MenuView');
+
+// The ref a host component hands back. Use React Native's own `HostInstance` rather than
+// `React.ElementRef`/`React.ComponentRef` of `HostComponent<NativeProps>`: under the
+// `react-native-strict-api` condition this project compiles with (see tsconfig.json),
+// `HostComponent` is a function type, and React's ref helpers resolve it to `never` —
+// which silently turns every command call into a type error.
+type MenuViewRef = HostInstance;
 
 interface NativeCommands {
-  open: (viewRef: React.ElementRef<ComponentType>) => void;
-  close: (viewRef: React.ElementRef<ComponentType>) => void;
+  open: (viewRef: MenuViewRef) => void;
+  close: (viewRef: MenuViewRef) => void;
 }
 
 export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
   supportedCommands: ['open', 'close'],
 });
 
-export default codegenNativeComponent<NativeProps>('MenuView');
-export type { NativeProps as MenuViewProps };
+export default MenuViewNativeComponent;
+export type { NativeProps as MenuViewProps, MenuViewRef };

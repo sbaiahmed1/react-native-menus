@@ -1,4 +1,17 @@
 {
-  "name": "MenuExample",
-  "displayName": "MenuExample"
+  "expo": {
+    "name": "MenuExample",
+    "slug": "menu-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "menu.example",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "menu.example"
+    }
+  }
 }
