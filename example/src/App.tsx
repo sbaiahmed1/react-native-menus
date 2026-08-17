@@ -8,10 +8,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import { MenuView, asSFSymbol } from 'react-native-menus';
+import { MenuView, asSFSymbol, type NativeRef } from 'react-native-menus';
 
 const App = () => {
-  const themeMenuRef = useRef<any>(null);
+  const themeMenuRef = useRef<NativeRef>(null);
   const [selectedTheme, setSelectedTheme] = useState<
     'light' | 'dark' | 'system'
   >('dark');
@@ -52,10 +52,16 @@ const App = () => {
           <View style={styles.menuContainer}>
             <Text style={styles.subtitle}>1. Theme Selector</Text>
             <Text style={styles.hint}>Current: {selectedTheme}</Text>
-            <Button
-              title="Open Programmatically"
-              onPress={() => themeMenuRef.current?.open()}
-            />
+            <View style={styles.row}>
+              <Button
+                title="Open Programmatically"
+                onPress={() => themeMenuRef.current?.open()}
+              />
+              <Button
+                title="Close"
+                onPress={() => themeMenuRef.current?.close()}
+              />
+            </View>
             <MenuView
               ref={themeMenuRef}
               checkedColor="#007AFF"
@@ -305,6 +311,10 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: '#6b7280',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
   },
   menuButton: {
     padding: 12,

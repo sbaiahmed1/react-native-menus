@@ -20,7 +20,14 @@ export interface MenuViewProps extends Omit<NativeMenuViewProps, 'children'> {
 }
 
 export interface NativeRef {
+  /**
+   * Opens the menu programmatically. No-op while `disabled`.
+   *
+   * On iOS this requires 17.4 or newer — older versions have no public API for
+   * presenting a `UIButton`'s menu, so the call logs a warning and does nothing.
+   */
   open: () => void;
+  /** Dismisses the menu if it is currently open. */
   close: () => void;
 }
 
@@ -29,18 +36,22 @@ export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
     const { children, ...nativeProps } = props;
     const nativeRef = useRef<React.ElementRef<typeof NativeMenuView>>(null);
 
-    useImperativeHandle(ref, () => ({
-      open: () => {
-        if (nativeRef.current) {
-          Commands.open(nativeRef.current);
-        }
-      },
-      close: () => {
-        if (nativeRef.current) {
-          Commands.close(nativeRef.current);
-        }
-      },
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        open: () => {
+          if (nativeRef.current) {
+            Commands.open(nativeRef.current);
+          }
+        },
+        close: () => {
+          if (nativeRef.current) {
+            Commands.close(nativeRef.current);
+          }
+        },
+      }),
+      []
+    );
 
     if (Platform.OS === 'ios') {
       return (
