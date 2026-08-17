@@ -10,6 +10,16 @@ export interface MenuItem {
   destructive?: boolean;
   // iOS-only: SF Symbol name to show beside the title
   iosSymbol?: string;
+  /**
+   * What a screen reader announces for this item, replacing the visible text.
+   * Defaults to `title`, followed by `subtitle` when present.
+   */
+  accessibilityLabel?: string;
+  /**
+   * Extra guidance announced after the label, e.g. "Permanently deletes the item".
+   * Destructive items already announce as destructive without this.
+   */
+  accessibilityHint?: string;
 }
 
 export interface MenuSelectEvent {
@@ -28,6 +38,19 @@ export interface NativeProps extends ViewProps {
   disabled?: boolean;
   androidDisplayMode?: WithDefault<'dialog' | 'tooltip', 'dialog'>;
   onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
+  /**
+   * Expands the trigger's *hit area* to at least 44pt (iOS) / 48dp (Android) when the
+   * rendered view is smaller, satisfying WCAG 2.2 target-size guidance.
+   *
+   * This only affects touch and accessibility hit-testing — it never changes layout, so
+   * nothing moves on screen. Set to `false` to opt out.
+   */
+  enforceMinimumTouchTarget?: WithDefault<boolean, true>;
+  /**
+   * Announced after the trigger's label to explain what activating it does.
+   * Defaults to a platform-appropriate phrase such as "Opens a menu".
+   */
+  menuAccessibilityHint?: string;
 }
 
 // The ref a host component hands back.
