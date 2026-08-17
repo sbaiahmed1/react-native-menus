@@ -60,6 +60,25 @@ class MenuViewManager : ViewGroupManager<MenuView>() {
         view.setAndroidDisplayMode(androidDisplayMode)
     }
 
+    // `accessibilityLabel` is a base View prop that BaseViewManager already handles (it
+    // stores a tag and recomputes contentDescription). Override rather than redeclare, so
+    // RN's own handling still runs, and mirror the value into the view — the trigger builds
+    // its announcement from it plus the selected item, which the base handling can't know.
+    override fun setAccessibilityLabel(view: MenuView, accessibilityLabel: String?) {
+        super.setAccessibilityLabel(view, accessibilityLabel)
+        view.setAccessibilityLabelProp(accessibilityLabel)
+    }
+
+    @ReactProp(name = "menuAccessibilityHint")
+    fun setMenuAccessibilityHint(view: MenuView, menuAccessibilityHint: String?) {
+        view.setMenuAccessibilityHint(menuAccessibilityHint)
+    }
+
+    @ReactProp(name = "enforceMinimumTouchTarget", defaultBoolean = true)
+    fun setEnforceMinimumTouchTarget(view: MenuView, enforceMinimumTouchTarget: Boolean) {
+        view.setEnforceMinimumTouchTarget(enforceMinimumTouchTarget)
+    }
+
     override fun receiveCommand(root: MenuView, commandId: String, args: com.facebook.react.bridge.ReadableArray?) {
         when (commandId) {
             "open" -> root.open()

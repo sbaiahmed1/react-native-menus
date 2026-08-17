@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +34,9 @@ class MenuView(context: Context) : FrameLayout(context) {
     private var textColor: String? = null
     private var disabled: Boolean = false
     private var androidDisplayMode: String? = "dialog"
+    private var accessibilityLabelProp: String? = null
+    private var menuAccessibilityHint: String? = null
+    private var enforceMinimumTouchTarget: Boolean = true
 
     init {
         setupMenuTrigger()
@@ -43,6 +47,216 @@ class MenuView(context: Context) : FrameLayout(context) {
         // Children will be added by React Native
         isClickable = true
         isFocusable = true
+        // Screen readers need to land on the trigger as a single control, not on the
+        // decorative child text, so it is announced as an actionable button.
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+        accessibilityDelegate = createAccessibilityDelegate()
+    }
+
+    /**
+     * Deliberately a function, not a `val`. `init {}` calls `setupMenuTrigger()` before a
+     * property declared further down has been initialised, so assigning from a `val` here
+     * silently installed `null` — the delegate never ran and the trigger kept reporting as
+     * a bare FrameLayout with no role, state, or expand/collapse actions.
+     */
+    private fun createAccessibilityDelegate() = object : View.AccessibilityDelegate() {
+        override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+            super.onInitializeAccessibilityNodeInfo(host, info)
+            info.className = android.widget.Button::class.java.name
+            info.isEnabled = !disabled
+            info.isClickable = !disabled
+            info.contentDescription = resolveAccessibilityLabel()
+
+            val hint = menuAccessibilityHint ?: DEFAULT_MENU_HINT
+            info.addAction(
+                AccessibilityNodeInfo.AccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_CLICK,
+                    hint
+                )
+            )
+
+            // Expose the open/closed state so TalkBack can announce and drive it.
+            if (isMenuShowing()) {
+                info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_COLLAPSE)
+            } else if (!disabled) {
+                info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND)
+            }
+        }
+
+        override fun performAccessibilityAction(host: View, action: Int, args: Bundle?): Boolean {
+            return when (action) {
+                AccessibilityNodeInfo.ACTION_EXPAND -> {
+                    open()
+                    true
+                }
+                AccessibilityNodeInfo.ACTION_COLLAPSE -> {
+                    close()
+                    true
+                }
+                else -> super.performAccessibilityAction(host, action, args)
+            }
+        }
+    }
+
+    /**
+     * Label precedence mirrors iOS: explicit prop, then the selected item, then `title`.
+     * Falls back to the child content so the trigger is never announced nameless.
+     */
+    private fun resolveAccessibilityLabel(): CharSequence? {
+        accessibilityLabelProp?.takeIf { it.isNotEmpty() }?.let { return it }
+
+        selectedItemIdentifier?.let { selected ->
+            menuItems.firstOrNull { it["identifier"] == selected }?.let { item ->
+                val itemLabel = item["accessibilityLabel"] as? String
+                return if (!itemLabel.isNullOrEmpty()) itemLabel else item["title"] as? String
+            }
+        }
+
+        if (title.isNotEmpty()) {
+            return title
+        }
+
+        return flattenChildText().takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * Starts at the content views, never at this view: reading our own contentDescription
+     * here would feed the value we just derived back into the derivation.
+     *
+     * On Android the JS wrapper renders MenuView as an absolutely-positioned overlay with
+     * the app's content as a SIBLING rather than a child (see `src/index.tsx`), so this
+     * view usually has no children at all. Fall back to the siblings in that case.
+     */
+    private fun flattenChildText(): String {
+        val sources: List<View> = if (childCount > 0) {
+            (0 until childCount).map { getChildAt(it) }
+        } else {
+            (parent as? ViewGroup)
+                ?.let { p -> (0 until p.childCount).map { p.getChildAt(it) } }
+                // Never another MenuView: their descriptions are themselves derived, so
+                // including them makes each pass swallow and re-swallow the others.
+                ?.filter { it !== this && it !is MenuView }
+                ?: emptyList()
+        }
+
+        return sources
+            .map { textOf(it) }
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
+            .take(MAX_DERIVED_LABEL_CHARS)
+    }
+
+    private fun textOf(view: View): String {
+        if (view is TextView && !view.text.isNullOrEmpty()) {
+            return view.text.toString()
+        }
+        view.contentDescription?.takeIf { it.isNotEmpty() }?.let { return it.toString() }
+        if (view is ViewGroup) {
+            return (0 until view.childCount)
+                .map { textOf(view.getChildAt(it)) }
+                .filter { it.isNotEmpty() }
+                .joinToString(" ")
+        }
+        return ""
+    }
+
+    /**
+     * Mirrors the resolved label onto the View itself. The AccessibilityDelegate already sets
+     * it on the node, but TalkBack and inspection tooling also read View.contentDescription,
+     * and RN leaves it null whenever the app supplied no explicit accessibilityLabel.
+     */
+    private fun syncContentDescription() {
+        val resolved = resolveAccessibilityLabel()
+        if (contentDescription?.toString() != resolved?.toString()) {
+            contentDescription = resolved
+        }
+    }
+
+    /**
+     * Collapses the trigger to a single screen-reader element by hiding the content views,
+     * which this view already announces.
+     *
+     * A native backstop for the `importantForAccessibility` prop the JS wrapper already sets,
+     * so the behaviour does not depend on that wrapper surviving view flattening.
+     *
+     * Safe to walk siblings because the JS wrapper is marked `collapsable={false}`, so this
+     * view's parent is always that wrapper and never the surrounding screen.
+     *
+     * To verify this, dump the COMPRESSED hierarchy — `uiautomator dump --compressed`, the
+     * tree a screen reader actually walks. A plain `uiautomator dump` deliberately includes
+     * views that are not important for accessibility, so the hidden content still shows up
+     * there and looks like a failure.
+     */
+    private fun hideContentFromAccessibility() {
+        val targets: List<View> = if (childCount > 0) {
+            (0 until childCount).map { getChildAt(it) }
+        } else {
+            (parent as? ViewGroup)
+                ?.let { p -> (0 until p.childCount).map { p.getChildAt(it) } }
+                ?.filter { it !== this && it !is MenuView }
+                ?: emptyList()
+        }
+
+        targets.forEach { view ->
+            if (view.importantForAccessibility != IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS) {
+                view.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            }
+        }
+    }
+
+    fun setAccessibilityLabelProp(label: String?) {
+        this.accessibilityLabelProp = label
+        syncContentDescription()
+    }
+
+    fun setMenuAccessibilityHint(hint: String?) {
+        this.menuAccessibilityHint = hint
+    }
+
+    fun setEnforceMinimumTouchTarget(enforce: Boolean) {
+        this.enforceMinimumTouchTarget = enforce
+        requestLayout()
+    }
+
+    /**
+     * Grows the *touch* area to at least 48dp via a TouchDelegate on the parent. Layout is
+     * untouched, so nothing moves on screen — only hit-testing changes (WCAG 2.2 target size).
+     */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        applyMinimumTouchTarget()
+        hideContentFromAccessibility()
+        // Resolved here, not at prop time: the child-text fallback depends on text React
+        // Native lays out asynchronously.
+        syncContentDescription()
+    }
+
+    private fun applyMinimumTouchTarget() {
+        val parentView = parent as? View ?: return
+        if (!enforceMinimumTouchTarget) {
+            parentView.touchDelegate = null
+            return
+        }
+
+        val minPx = (MIN_TOUCH_TARGET_DP * resources.displayMetrics.density).toInt()
+        val widthDeficit = maxOf(0, minPx - width)
+        val heightDeficit = maxOf(0, minPx - height)
+        if (widthDeficit == 0 && heightDeficit == 0) {
+            return
+        }
+
+        val rect = android.graphics.Rect()
+        getHitRect(rect)
+        rect.inset(-widthDeficit / 2, -heightDeficit / 2)
+        parentView.touchDelegate = android.view.TouchDelegate(rect, this)
+    }
+
+    override fun onViewAdded(child: View) {
+        super.onViewAdded(child)
+        // This view already intercepts every touch, so children are never interactive and
+        // are decorative to a screen reader — the trigger itself carries the announcement.
+        // `labelFromChildren` still reads their text directly for the label fallback.
+        child.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
     }
 
     override fun onInterceptTouchEvent(ev: android.view.MotionEvent?): Boolean {
@@ -101,6 +315,9 @@ class MenuView(context: Context) : FrameLayout(context) {
 
     fun setSelectedIdentifier(selectedIdentifier: String?) {
         this.selectedItemIdentifier = selectedIdentifier
+        // The announced label is derived from the selection, so it must be recomputed here:
+        // a prop change alone does not trigger a layout pass.
+        syncContentDescription()
     }
 
     fun setDisabled(disabled: Boolean) {
@@ -115,6 +332,7 @@ class MenuView(context: Context) : FrameLayout(context) {
 
     fun setTitle(title: String?) {
         this.title = title ?: ""
+        syncContentDescription()
     }
 
     fun setThemeVariant(themeVariant: String?) {
@@ -168,12 +386,21 @@ class MenuView(context: Context) : FrameLayout(context) {
                         menuItem["destructive"] = item.getBoolean("destructive")
                     }
 
+                    if (item.hasKey("accessibilityLabel")) {
+                        menuItem["accessibilityLabel"] = item.getString("accessibilityLabel") ?: ""
+                    }
+
+                    if (item.hasKey("accessibilityHint")) {
+                        menuItem["accessibilityHint"] = item.getString("accessibilityHint") ?: ""
+                    }
+
                     items.add(menuItem)
                 }
             }
         }
         
         this.menuItems = items
+        syncContentDescription()
     }
 
     private var currentDialog: Dialog? = null
@@ -250,6 +477,14 @@ class MenuView(context: Context) : FrameLayout(context) {
                 menuItem.isCheckable = true
                 menuItem.isChecked = true
             }
+
+            // Let a per-item accessibilityLabel override what TalkBack reads (API 26+).
+            val itemLabel = (item["accessibilityLabel"] as? String)?.takeIf { it.isNotEmpty() }
+            if (itemLabel != null &&
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O
+            ) {
+                menuItem.contentDescription = itemLabel
+            }
         }
         
         // Force show icons/checkmarks if possible (requires internal API or Android Q+)
@@ -306,17 +541,58 @@ class MenuView(context: Context) : FrameLayout(context) {
                     // This will be handled by the ScrollView's maxHeight
                 }
                 
-                // Add slide up animation
-                window.attributes?.windowAnimations = android.R.style.Animation_Dialog
+                // Add slide up animation, unless the user asked for reduced motion
+                if (!isReduceMotionEnabled()) {
+                    window.attributes?.windowAnimations = android.R.style.Animation_Dialog
+                }
             }
-            
+
+            // Name the window so TalkBack announces what just opened.
+            val menuName = title.takeIf { it.isNotEmpty() } ?: resolveAccessibilityLabel()
+            setTitle(menuName)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                dialogView.accessibilityPaneTitle = menuName
+            }
+
             // Clear reference when dialog is dismissed
             setOnDismissListener {
                 currentDialog = null
+                returnAccessibilityFocusToTrigger()
             }
         }
-        
+
         currentDialog?.show()
+
+        // Move screen-reader focus into the menu once it is on screen.
+        dialogView.post {
+            dialogView.performAccessibilityAction(
+                AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS,
+                null
+            )
+        }
+    }
+
+    /**
+     * TalkBack focus would otherwise be stranded on the dismissed window, so hand it back to
+     * the trigger the user activated.
+     */
+    private fun returnAccessibilityFocusToTrigger() {
+        post {
+            performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+        }
+    }
+
+    /** Honours the system "remove animations" accessibility setting. */
+    private fun isReduceMotionEnabled(): Boolean {
+        return try {
+            android.provider.Settings.Global.getFloat(
+                context.contentResolver,
+                android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE,
+                1f
+            ) == 0f
+        } catch (e: Exception) {
+            false
+        }
     }
     
     private fun createModalMenuView(): View {
@@ -456,9 +732,30 @@ class MenuView(context: Context) : FrameLayout(context) {
                 gravity = Gravity.CENTER_VERTICAL
                 isClickable = true
                 isFocusable = true
-                
+                // WCAG 2.2 target size: rows are the primary controls inside the menu.
+                minimumHeight = (MIN_TOUCH_TARGET_DP * resources.displayMetrics.density).toInt()
+
                 setOnClickListener {
                     radioButton.performClick()
+                }
+
+                // The row is the accessible item, so announce it as one node rather than
+                // letting TalkBack read the title and subtitle as separate stray text.
+                val itemLabel = (item["accessibilityLabel"] as? String)?.takeIf { it.isNotEmpty() }
+                val itemHint = (item["accessibilityHint"] as? String)?.takeIf { it.isNotEmpty() }
+                val itemSubtitle = (item["subtitle"] as? String)?.takeIf { it.isNotEmpty() }
+                val destructive = item["destructive"] as? Boolean == true
+
+                contentDescription = buildString {
+                    append(itemLabel ?: (item["title"] as String))
+                    if (itemLabel == null && itemSubtitle != null) {
+                        append(", ")
+                        append(itemSubtitle)
+                    }
+                    if (destructive) {
+                        append(", ")
+                        append(DESTRUCTIVE_ANNOUNCEMENT)
+                    }
                 }
 
                 // Accessibility delegate to make the row act like a radio button
@@ -468,6 +765,15 @@ class MenuView(context: Context) : FrameLayout(context) {
                         info.className = RadioButton::class.java.name
                         info.isCheckable = true
                         info.isChecked = radioButton.isChecked
+                        info.isSelected = radioButton.isChecked
+                        if (itemHint != null) {
+                            info.addAction(
+                                AccessibilityNodeInfo.AccessibilityAction(
+                                    AccessibilityNodeInfo.ACTION_CLICK,
+                                    itemHint
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -480,6 +786,9 @@ class MenuView(context: Context) : FrameLayout(context) {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     1.0f
                 )
+                // The row already carries the full announcement; without this TalkBack
+                // would read the title and subtitle a second time as loose text.
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             }
 
             val titleView = TextView(context).apply {
@@ -556,5 +865,15 @@ class MenuView(context: Context) : FrameLayout(context) {
         reactContext
             .getJSModule(RCTEventEmitter::class.java)
             .receiveEvent(id, "onMenuSelect", event)
+    }
+
+    companion object {
+        /** WCAG 2.2 minimum target size, in dp. Applied to hit-testing only. */
+        private const val MIN_TOUCH_TARGET_DP = 48f
+        private const val DEFAULT_MENU_HINT = "Opens a menu"
+        private const val DESTRUCTIVE_ANNOUNCEMENT = "destructive"
+
+        /** Backstop so a derived label can never become an unbounded wall of text. */
+        private const val MAX_DERIVED_LABEL_CHARS = 200
     }
 }

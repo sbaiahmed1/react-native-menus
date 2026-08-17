@@ -73,8 +73,12 @@ export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
       );
     }
 
+    // `collapsable={false}` below is load-bearing: React Native's view flattening would
+    // otherwise remove the wrapper, leaving the native overlay parented to the whole scroll
+    // content. The native label fallback walks siblings to find the trigger's text, so a
+    // collapsed wrapper makes it swallow the entire screen.
     return (
-      <View style={styles.relative}>
+      <View style={styles.relative} collapsable={false}>
         <NativeMenuView
           style={[
             StyleSheet.absoluteFill,
@@ -85,7 +89,19 @@ export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
           ref={nativeRef}
           {...nativeProps}
         />
-        <View>{children}</View>
+        {/*
+          The overlay above announces this content's text, so hide the content itself or a
+          screen reader reads the trigger and then the same words again as loose text.
+          `collapsable={false}` keeps React Native's view flattening from removing this
+          wrapper and taking the accessibility prop with it. MenuView.kt applies the same
+          thing natively as a backstop.
+        */}
+        <View
+          importantForAccessibility="no-hide-descendants"
+          collapsable={false}
+        >
+          {children}
+        </View>
       </View>
     );
   }

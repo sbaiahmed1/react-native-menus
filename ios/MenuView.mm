@@ -22,7 +22,15 @@ using namespace facebook::react;
     BOOL _isChildViewButton;
     NSHashTable<UIView *> *_disabledViews;
     BOOL _disabled;
+    NSString *_accessibilityLabelProp;
+    NSString *_menuAccessibilityHint;
+    NSString *_menuTitle;
+    NSString *_selectedIdentifier;
+    BOOL _enforceMinimumTouchTarget;
 }
+
+// WCAG 2.2 target size (minimum). Applied to hit-testing only, never to layout.
+static const CGFloat kMinimumTouchTargetSize = 44.0;
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
 {
@@ -36,6 +44,7 @@ using namespace facebook::react;
         _props = defaultProps;
         _disabledViews = [NSHashTable weakObjectsHashTable];
         _isChildViewButton = NO;
+        _enforceMinimumTouchTarget = YES;
     }
 
     return self;
@@ -83,7 +92,8 @@ using namespace facebook::react;
         _menuButton = (UIButton *)childView;
         _menuButton.showsMenuAsPrimaryAction = YES;
         _isChildViewButton = YES;
-        [self updateMenuItems:_menuItems selectedIdentifier:nil];
+        [self updateMenuItems:_menuItems selectedIdentifier:_selectedIdentifier];
+        [self updateAccessibility];
     } else {
         // For non-button children, create an invisible button overlay to show the menu
         _isChildViewButton = NO;
@@ -105,7 +115,8 @@ using namespace facebook::react;
             [_menuButton.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
         ]];
 
-        [self updateMenuItems:_menuItems selectedIdentifier:nil];
+        [self updateMenuItems:_menuItems selectedIdentifier:_selectedIdentifier];
+        [self updateAccessibility];
     }
 }
 
@@ -189,6 +200,19 @@ using namespace facebook::react;
         [self updateDisabledState];
     }
 
+    // Accessibility inputs. `accessibilityLabel` comes from the base ViewProps, so an app
+    // sets it exactly as it would on any other View.
+    _accessibilityLabelProp = newViewProps.accessibilityLabel.empty()
+        ? nil
+        : [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabel.c_str()];
+    _menuAccessibilityHint = newViewProps.menuAccessibilityHint.empty()
+        ? nil
+        : [[NSString alloc] initWithUTF8String:newViewProps.menuAccessibilityHint.c_str()];
+    _menuTitle = newViewProps.title.empty()
+        ? nil
+        : [[NSString alloc] initWithUTF8String:newViewProps.title.c_str()];
+    _enforceMinimumTouchTarget = newViewProps.enforceMinimumTouchTarget;
+
     // Update themeVariant
     if (oldViewProps.themeVariant != newViewProps.themeVariant) {
         switch (newViewProps.themeVariant) {
@@ -234,6 +258,7 @@ using namespace facebook::react;
     if (!newViewProps.selectedIdentifier.empty()) {
         currentSelectedIdentifier = [[NSString alloc] initWithUTF8String:newViewProps.selectedIdentifier.c_str()];
     }
+    _selectedIdentifier = currentSelectedIdentifier;
 
     if (menuItemsChanged) {
         NSMutableArray *items = [[NSMutableArray alloc] init];
@@ -264,7 +289,13 @@ using namespace facebook::react;
             if (destructive) {
                 dict[@"destructive"] = @(YES);
             }
-            
+            if (!item.accessibilityLabel.empty()) {
+                dict[@"accessibilityLabel"] = [[NSString alloc] initWithUTF8String:item.accessibilityLabel.c_str()];
+            }
+            if (!item.accessibilityHint.empty()) {
+                dict[@"accessibilityHint"] = [[NSString alloc] initWithUTF8String:item.accessibilityHint.c_str()];
+            }
+
             [items addObject:dict];
         }
         _menuItems = [items copy];
@@ -277,6 +308,8 @@ using namespace facebook::react;
         // This handles cases where the component was remounted after being unmounted
         [self updateMenuSelection:currentSelectedIdentifier];
     }
+
+    [self updateAccessibility];
 
     [super updateProps:props oldProps:oldProps];
 }
@@ -332,6 +365,18 @@ using namespace facebook::react;
         // Set state based on current selection (controlled via props)
         if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [identifier isEqualToString:selectedIdentifier]) {
             action.state = UIMenuElementStateOn;
+        }
+
+        // Best-effort per-item accessibility. UIKit builds the menu's own UI and does not
+        // document honouring these on a UIMenuElement, so `title`/`subtitle` remain the
+        // reliable announcement on iOS; setting them is harmless where ignored.
+        NSString *itemLabel = item[@"accessibilityLabel"];
+        NSString *itemHint = item[@"accessibilityHint"];
+        if (itemLabel.length > 0) {
+            action.accessibilityLabel = itemLabel;
+        }
+        if (itemHint.length > 0) {
+            action.accessibilityHint = itemHint;
         }
 
         [actions addObject:action];
@@ -399,6 +444,152 @@ using namespace facebook::react;
     _menuButton.menu = menu;
 }
 
+#pragma mark - Accessibility
+
+/**
+ * The trigger is exposed to VoiceOver as a SINGLE button element. Without this the menu
+ * button carries no label at all, and the child content surfaces as plain static text —
+ * so VoiceOver never announces that anything here is actionable.
+ */
+- (void)updateAccessibility
+{
+    // The HOST VIEW is the accessibility element, not the overlay button. React Native
+    // already applies accessibilityLabel/hint to this view with the correct frame, so
+    // annotating the button instead produced a duplicate element at a stale position.
+    self.isAccessibilityElement = YES;
+
+    UIAccessibilityTraits traits = UIAccessibilityTraitButton;
+    if (_disabled) {
+        traits |= UIAccessibilityTraitNotEnabled;
+    }
+    self.accessibilityTraits = traits;
+
+    if (self.accessibilityHint.length == 0) {
+        self.accessibilityHint = _menuAccessibilityHint.length > 0
+            ? _menuAccessibilityHint
+            : NSLocalizedString(@"Opens a menu", @"Accessibility hint for a menu trigger");
+    }
+
+    // One element only: the overlay button must not surface separately.
+    _menuButton.isAccessibilityElement = NO;
+
+    // Child content is decorative — this view announces the same text. Hiding it from the
+    // tree does not stop the label fallback reading it: RCTRecursiveAccessibilityLabel
+    // walks the view hierarchy directly, not the accessibility tree.
+    if (_childView && !_isChildViewButton) {
+        _childView.accessibilityElementsHidden = YES;
+    }
+}
+
+/**
+ * Resolved on demand rather than assigned during updateProps. React Native lays text out
+ * asynchronously, so at prop time the child-content fallback is usually still empty — a
+ * one-shot assignment left the trigger permanently nameless whenever the app supplied
+ * neither an explicit label, a `selectedIdentifier`, nor a `title`.
+ */
+- (NSString *)accessibilityLabel
+{
+    if (_accessibilityLabelProp.length > 0) {
+        return _accessibilityLabelProp;
+    }
+
+    NSString *fromSelection = [self labelFromSelectedItem];
+    if (fromSelection.length > 0) {
+        return fromSelection;
+    }
+
+    if (_menuTitle.length > 0) {
+        return _menuTitle;
+    }
+
+    // Last resort: RCTViewComponentView already flattens child text for an accessibility
+    // element (via RCTRecursiveAccessibilityLabel), so there is nothing to hand-roll here.
+    // It must stay LAST — calling super first would let child text beat the selected item.
+    return [super accessibilityLabel];
+}
+
+/** The selected item's own accessibilityLabel, falling back to its visible title. */
+- (NSString *)labelFromSelectedItem
+{
+    if (_selectedIdentifier.length == 0) {
+        return nil;
+    }
+
+    for (NSDictionary *item in _menuItems) {
+        if ([item[@"identifier"] isEqualToString:_selectedIdentifier]) {
+            NSString *itemLabel = item[@"accessibilityLabel"];
+            return itemLabel.length > 0 ? itemLabel : item[@"title"];
+        }
+    }
+    return nil;
+}
+
+#pragma mark - Minimum touch target
+
+/** Bounds grown to at least 44pt on each axis, centred. Never affects layout. */
+- (CGRect)minimumTouchTargetRect
+{
+    CGRect bounds = self.bounds;
+    CGFloat widthDeficit = MAX(0.0, kMinimumTouchTargetSize - CGRectGetWidth(bounds));
+    CGFloat heightDeficit = MAX(0.0, kMinimumTouchTargetSize - CGRectGetHeight(bounds));
+    if (widthDeficit == 0.0 && heightDeficit == 0.0) {
+        return bounds;
+    }
+    return CGRectInset(bounds, -widthDeficit / 2.0, -heightDeficit / 2.0);
+}
+
+- (BOOL)shouldExpandTouchTarget
+{
+    return _enforceMinimumTouchTarget && !_disabled && _menuButton != nil;
+}
+
+/**
+ * Computed on demand rather than assigned, so it can never go stale against a frame that
+ * Fabric applies after our prop/layout passes.
+ */
+- (CGRect)accessibilityFrame
+{
+    if (![self shouldExpandTouchTarget]) {
+        return [super accessibilityFrame];
+    }
+    return UIAccessibilityConvertFrameToScreenCoordinates([self minimumTouchTargetRect], self);
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    // Re-resolve rather than only re-framing: the child-content fallback depends on text
+    // that React Native lays out asynchronously, so at updateProps time it is often still
+    // empty and the trigger would keep a nil label.
+    [self updateAccessibility];
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if ([super pointInside:point withEvent:event]) {
+        return YES;
+    }
+    if (![self shouldExpandTouchTarget]) {
+        return NO;
+    }
+    return CGRectContainsPoint([self minimumTouchTargetRect], point);
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    UIView *hit = [super hitTest:point withEvent:event];
+    if (hit != nil && hit != self) {
+        return hit;
+    }
+    // Inside the expanded margin: route to the button so the menu still opens.
+    if ([self shouldExpandTouchTarget] && CGRectContainsPoint([self minimumTouchTargetRect], point)) {
+        return _menuButton;
+    }
+    return hit;
+}
+
+#pragma mark -
+
 - (void)updateDisabledState
 {
     if (_menuButton) {
@@ -410,8 +601,9 @@ using namespace facebook::react;
             _menuButton.menu = nil;
         } else {
             // Re-enable menu if not disabled
-            [self updateMenuItems:_menuItems selectedIdentifier:nil];
+            [self updateMenuItems:_menuItems selectedIdentifier:_selectedIdentifier];
         }
+        [self updateAccessibility];
     }
 }
 
