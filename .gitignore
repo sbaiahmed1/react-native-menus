@@ -41,13 +41,6 @@ project.xcworkspace
 local.properties
 android.iml
 
-# Cocoapods
-#
-example/ios/Pods
-
-# Ruby
-example/vendor/
-
 # node.js
 #
 node_modules/
@@ -71,6 +64,10 @@ android/keystores/debug.keystore
 
 # Expo
 .expo/
+
+# Expo prebuild output (continuous native generation)
+example/ios/
+example/android/
 
 # Turborepo
 .turbo/

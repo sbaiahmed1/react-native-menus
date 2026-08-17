@@ -4,6 +4,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import type {
   MenuItem,
   MenuSelectEvent,
+  MenuViewRef,
   MenuViewProps as NativeMenuViewProps,
 } from './MenuViewNativeComponent';
 import NativeMenuView, { Commands } from './MenuViewNativeComponent';
@@ -34,7 +35,7 @@ export interface NativeRef {
 export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
   (props, ref) => {
     const { children, ...nativeProps } = props;
-    const nativeRef = useRef<React.ElementRef<typeof NativeMenuView>>(null);
+    const nativeRef = useRef<MenuViewRef>(null);
 
     useImperativeHandle(
       ref,

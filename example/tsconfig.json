@@ -1,0 +1,15 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    // Resolve the library to its source, the same way the root tsconfig and Metro do.
+    // Without this, `import ... from 'react-native-menus'` falls through to the package's
+    // `types` entry (./lib/typescript/...), which only exists after `yarn prepare`, so
+    // editors report TS2307 on a clean checkout.
+    "paths": {
+      "react-native-menus": ["../src/index"]
+    },
+    // Match the root tsconfig so library source typechecks against React Native's strict
+    // type surface here too; keep Expo's own "react-native" condition as a fallback.
+    "customConditions": ["react-native-strict-api", "react-native"]
+  }
+}
