@@ -107,8 +107,14 @@ class MenuView(context: Context) : FrameLayout(context) {
 
         selectedItemIdentifier?.let { selected ->
             menuItems.firstOrNull { it["identifier"] == selected }?.let { item ->
-                val itemLabel = item["accessibilityLabel"] as? String
-                return if (!itemLabel.isNullOrEmpty()) itemLabel else item["title"] as? String
+                // Fall through rather than return an empty name: setMenuItems stores an
+                // absent title as "", so a selected item with neither a label nor a title
+                // would otherwise leave the trigger announced with no name at all.
+                val resolved = (item["accessibilityLabel"] as? String)?.takeIf { it.isNotEmpty() }
+                    ?: (item["title"] as? String)?.takeIf { it.isNotEmpty() }
+                if (resolved != null) {
+                    return resolved
+                }
             }
         }
 
@@ -242,6 +248,9 @@ class MenuView(context: Context) : FrameLayout(context) {
         val widthDeficit = maxOf(0, minPx - width)
         val heightDeficit = maxOf(0, minPx - height)
         if (widthDeficit == 0 && heightDeficit == 0) {
+            // Clear, don't just skip: a delegate installed while the view was smaller would
+            // otherwise keep its stale oversized rect once the view grows past the minimum.
+            parentView.touchDelegate = null
             return
         }
 
