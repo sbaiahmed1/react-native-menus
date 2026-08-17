@@ -138,6 +138,8 @@ using namespace facebook::react;
 - (void)cleanupMenuButton
 {
     if (_menuButton) {
+        // Dismiss any menu still on screen so it doesn't outlive the view that owns it
+        [self close];
         // If it's not a child view button (i.e., it's our overlay button), remove it
         if (!_isChildViewButton && _menuButton.superview == self) {
             [_menuButton removeFromSuperview];
@@ -454,26 +456,46 @@ using namespace facebook::react;
                            alpha:1.0];
 }
 
-#pragma mark - RCTMenuViewViewProtocol
+#pragma mark - Commands
 
+- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args
+{
+    RCTMenuViewHandleCommand(self, commandName, args);
+}
+
+// The button's menu is presented by UIKit's own context menu interaction (via
+// `showsMenuAsPrimaryAction`), not by a target/action we control. Sending control
+// events therefore does nothing — `performPrimaryAction` is the only public API
+// that triggers the presentation, and it is iOS 17.4+.
 - (void)open
 {
-    if (_menuButton) {
-        if (_isChildViewButton) {
-             [_menuButton sendActionsForControlEvents:UIControlEventTouchUpInside];
-        } else {
-             // For overlay button, we also simulate touch
-             [_menuButton sendActionsForControlEvents:UIControlEventTouchUpInside];
-        }
+    if (_disabled || !_menuButton || !_menuButton.menu) {
+        return;
+    }
+
+    if (@available(iOS 17.4, *)) {
+        [_menuButton performPrimaryAction];
+    } else {
+        RCTLogWarn(@"[MenuView] open() requires iOS 17.4 or newer. On older versions the "
+                   @"menu can only be opened by tapping it.");
     }
 }
 
 - (void)close
 {
-    // Closing the menu programmatically is not directly supported by UIButton/UIMenu
-    // This is a best-effort attempt or no-op
-    // One hack is to remove the menu and re-add it, but that might not dismiss the presented view.
-    // So we leave it empty for now or maybe log a warning.
+    [[self activeMenuInteraction] dismissMenu];
+}
+
+// UIButton installs a UIContextMenuInteraction of its own once a non-nil `menu`
+// is set; that interaction is what owns the presented menu.
+- (nullable UIContextMenuInteraction *)activeMenuInteraction
+{
+    for (id<UIInteraction> interaction in _menuButton.interactions) {
+        if ([interaction isKindOfClass:[UIContextMenuInteraction class]]) {
+            return (UIContextMenuInteraction *)interaction;
+        }
+    }
+    return nil;
 }
 
 @end

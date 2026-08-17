@@ -223,7 +223,11 @@ const App = () => {
         title="Open Menu" 
         onPress={() => menuRef.current?.open()} 
       />
-      
+      <Button 
+        title="Close Menu" 
+        onPress={() => menuRef.current?.close()} 
+      />
+
       <MenuView
         ref={menuRef}
         menuItems={[
@@ -240,6 +244,22 @@ const App = () => {
   );
 };
 ```
+
+#### Ref methods
+
+| Method | Description |
+|--------|-------------|
+| `open()` | Opens the menu. No-op while `disabled`, or if the menu is already open. |
+| `close()` | Dismisses the menu if it is currently open. |
+
+> **iOS requires 17.4 or newer for `open()`.** iOS presents a `UIButton`'s menu through
+> UIKit's own context-menu gesture, and `UIControl.performPrimaryAction` — the only public
+> API that triggers it — was added in 17.4. On earlier versions `open()` logs a warning and
+> does nothing; the menu still opens on tap. `close()` works on all supported versions.
+
+> **Note:** attaching a `ref` gives you `{ open, close }` rather than the underlying native
+> view. If you previously relied on `ref.current` for `measure()` or `findNodeHandle()`, wrap
+> the `MenuView` in a plain `View` and measure that instead.
 
 ## API Reference
 

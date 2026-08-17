@@ -189,11 +189,24 @@ class MenuView(context: Context) : FrameLayout(context) {
         currentDialog?.dismiss()
         currentPopup?.dismiss()
     }
-    
+
+    private fun isMenuShowing(): Boolean = currentDialog?.isShowing == true || currentPopup != null
+
+    override fun onDetachedFromWindow() {
+        // Dismiss before the host window goes away, otherwise Android leaks the window
+        close()
+        super.onDetachedFromWindow()
+    }
+
     private fun showMenu() {
+        // A second menu would orphan the first one's reference, leaving it undismissable
+        if (isMenuShowing()) {
+            return
+        }
+
         // Check if tooltip mode is requested
         val useTooltip =  androidDisplayMode == "tooltip"
-        
+
         if (useTooltip) {
             showTooltipMenu()
         } else {
