@@ -215,6 +215,8 @@ const App = () => {
             <MenuView
               title="Advanced Options"
               themeVariant="dark"
+              accessibilityLabel="Advanced options"
+              menuAccessibilityHint="Opens advanced actions for this item"
               menuItems={[
                 {
                   identifier: 'info',
@@ -234,6 +236,8 @@ const App = () => {
                   subtitle: 'This action cannot be undone',
                   iosSymbol: asSFSymbol('trash'),
                   destructive: true,
+                  accessibilityLabel: 'Delete item permanently',
+                  accessibilityHint: 'This action cannot be undone',
                 },
               ]}
               onMenuSelect={handleMenuSelect}
