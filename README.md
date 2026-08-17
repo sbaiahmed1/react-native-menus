@@ -277,6 +277,11 @@ const App = () => {
 | `color` | `string` | `undefined` | Tint color for the menu button text (if using default button) |
 | `disabled` | `boolean` | `false` | Whether the menu is disabled |
 | `onMenuSelect` | `(event: NativeSyntheticEvent<MenuSelectEvent>) => void` | `undefined` | Callback when a menu item is selected |
+| `accessibilityLabel` | `string` | derived | What a screen reader announces for the trigger — see [Accessibility](#accessibility) |
+| `menuAccessibilityHint` | `string` | `'Opens a menu'` | Announced after the label to explain what activating the trigger does |
+| `enforceMinimumTouchTarget` | `boolean` | `true` | Expands the trigger's *hit area* to 44pt (iOS) / 48dp (Android). Never changes layout |
+
+All standard React Native `ViewProps` are supported, including `testID` and `accessibilityLabel`.
 
 ### MenuItem Object
 
@@ -287,6 +292,60 @@ const App = () => {
 | `subtitle` | `string` | Subtitle text (optional) |
 | `destructive` | `boolean` | Whether the item represents a destructive action (red text) |
 | `iosSymbol` | `string` | SF Symbol name (iOS only) |
+| `accessibilityLabel` | `string` | Replaces the item's announced text (defaults to `title`, then `subtitle`) |
+| `accessibilityHint` | `string` | Extra guidance announced after the label |
+
+## Accessibility
+
+The trigger is exposed to screen readers as a **single button element** rather than as loose
+text, so VoiceOver and TalkBack announce it as actionable, report its disabled state, and (on
+Android) expose expand/collapse actions.
+
+### How the trigger is named
+
+`accessibilityLabel` wins if you set it. Otherwise the label falls back, in order, to:
+
+1. the currently selected item's `accessibilityLabel`, then its `title`
+2. the `title` prop
+3. the text content of the children you rendered
+
+So a menu whose trigger shows the current selection is announced correctly with no extra props.
+
+```tsx
+<MenuView
+  accessibilityLabel="Advanced options"
+  menuAccessibilityHint="Opens advanced actions for this item"
+  menuItems={[
+    {
+      identifier: 'delete',
+      title: 'Delete Item',
+      destructive: true,
+      accessibilityLabel: 'Delete item permanently',
+      accessibilityHint: 'This action cannot be undone',
+    },
+  ]}
+  onMenuSelect={handleSelect}
+>
+  <Text>Advanced</Text>
+</MenuView>
+```
+
+### Target size
+
+`enforceMinimumTouchTarget` (on by default) grows the trigger's touch and screen-reader
+activation area to the WCAG 2.2 minimum of 44pt on iOS and 48dp on Android when the rendered
+view is smaller. It only affects hit-testing — **nothing moves on screen** — so it is safe to
+leave enabled. Android menu rows also carry a 48dp minimum height.
+
+### Platform notes
+
+- **Android** honours the system "remove animations" setting, moves screen-reader focus into
+  the dialog when it opens, and returns focus to the trigger when it closes.
+- **iOS** menus are presented by UIKit, which manages its own focus and animations. Per-item
+  `accessibilityLabel` is applied to the underlying `UIAction` and is honoured — an item
+  announces your label instead of the default `title, subtitle` pairing (verified on iOS 26).
+  This is undocumented UIKit behaviour rather than a guarantee, so treat it as an
+  enhancement: keep `title` meaningful on its own.
 
 ## Contributing
 
