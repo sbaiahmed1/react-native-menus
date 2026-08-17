@@ -406,42 +406,10 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
         return;
     }
 
-    // Recreate the menu with updated selection states
-    NSMutableArray<UIAction *> *actions = [[NSMutableArray alloc] init];
-
-    for (UIMenuElement *element in _menuButton.menu.children) {
-        if ([element isKindOfClass:[UIAction class]]) {
-            UIAction *oldAction = (UIAction *)element;
-
-            // Create new action with handler that captures the identifier and title
-            UIAction *newAction = [UIAction actionWithTitle:oldAction.title
-                                                      image:oldAction.image
-                                                 identifier:oldAction.identifier
-                                                    handler:^(__kindof UIAction * _Nonnull action) {
-                [self selectMenuItem:action.identifier title:action.title];
-            }];
-
-            // Copy all relevant properties from oldAction to preserve behavior
-            newAction.attributes = oldAction.attributes;
-
-            // Update state based on current selection
-            if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [oldAction.identifier isEqualToString:selectedIdentifier]) {
-                newAction.state = UIMenuElementStateOn;
-            } else {
-                newAction.state = UIMenuElementStateOff;
-            }
-
-            // Copy discoverability title if present
-            if (oldAction.discoverabilityTitle) {
-                newAction.discoverabilityTitle = oldAction.discoverabilityTitle;
-            }
-
-            [actions addObject:newAction];
-        }
-    }
-
-    UIMenu *menu = [UIMenu menuWithTitle:@"" children:actions];
-    _menuButton.menu = menu;
+    // Rebuild from `_menuItems` rather than from the live menu's children. Reconstructing
+    // UIActions from the existing menu only carried across title/image/attributes, so a
+    // selection-only update silently dropped each item's subtitle and accessibility label.
+    [self updateMenuItems:_menuItems selectedIdentifier:selectedIdentifier];
 }
 
 #pragma mark - Accessibility
@@ -463,12 +431,6 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
         traits |= UIAccessibilityTraitNotEnabled;
     }
     self.accessibilityTraits = traits;
-
-    if (self.accessibilityHint.length == 0) {
-        self.accessibilityHint = _menuAccessibilityHint.length > 0
-            ? _menuAccessibilityHint
-            : NSLocalizedString(@"Opens a menu", @"Accessibility hint for a menu trigger");
-    }
 
     // One element only: the overlay button must not surface separately.
     _menuButton.isAccessibilityElement = NO;
@@ -506,6 +468,25 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
     // element (via RCTRecursiveAccessibilityLabel), so there is nothing to hand-roll here.
     // It must stay LAST — calling super first would let child text beat the selected item.
     return [super accessibilityLabel];
+}
+
+/**
+ * Resolved on demand for the same reason as the label. Assigning it once left the hint
+ * permanently stale, since the guard that stopped it overwriting itself also stopped any
+ * later `menuAccessibilityHint` change from ever reaching VoiceOver.
+ */
+- (NSString *)accessibilityHint
+{
+    NSString *explicitHint = [super accessibilityHint];
+    if (explicitHint.length > 0) {
+        return explicitHint;
+    }
+
+    if (_menuAccessibilityHint.length > 0) {
+        return _menuAccessibilityHint;
+    }
+
+    return NSLocalizedString(@"Opens a menu", @"Accessibility hint for a menu trigger");
 }
 
 /** The selected item's own accessibilityLabel, falling back to its visible title. */

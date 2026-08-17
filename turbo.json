@@ -14,7 +14,8 @@
         "example/package.json",
         "example/app.json"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "build:ios": {
       "env": [
@@ -31,7 +32,8 @@
         "example/package.json",
         "example/app.json"
       ],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     }
   }
 }
