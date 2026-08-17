@@ -119,7 +119,9 @@ jobs:
     runs-on: macos-latest
 
     env:
-      XCODE_VERSION: 16.3
+      # Must exist on the macos-latest image, which now ships only Xcode 26.x.
+      # 26.5 is the version this project's iOS build is verified against.
+      XCODE_VERSION: 26.5
       TURBO_CACHE_DIR: .turbo/ios
       RCT_USE_RN_DEP: 1
       RCT_USE_PREBUILT_RNCORE: 1
