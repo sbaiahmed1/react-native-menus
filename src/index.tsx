@@ -9,6 +9,17 @@ import type {
 } from './MenuViewNativeComponent';
 import NativeMenuView, { Commands } from './MenuViewNativeComponent';
 
+/**
+ * `Commands` is declared with the ref type React Native's codegen parser demands
+ * (`React.ComponentRef<HostComponent<...>>`), which TypeScript resolves to `never` under
+ * the `react-native-strict-api` condition. Re-narrow it here to the instance type a host
+ * ref actually holds. See the comment in ./MenuViewNativeComponent.ts before changing this.
+ */
+const MenuCommands = Commands as unknown as {
+  open: (viewRef: MenuViewRef) => void;
+  close: (viewRef: MenuViewRef) => void;
+};
+
 export type { MenuItem, MenuSelectEvent };
 
 // Re-export SF Symbols helpers for consumers
@@ -42,12 +53,12 @@ export const MenuView = React.forwardRef<NativeRef, MenuViewProps>(
       () => ({
         open: () => {
           if (nativeRef.current) {
-            Commands.open(nativeRef.current);
+            MenuCommands.open(nativeRef.current);
           }
         },
         close: () => {
           if (nativeRef.current) {
-            Commands.close(nativeRef.current);
+            MenuCommands.close(nativeRef.current);
           }
         },
       }),

@@ -1,4 +1,4 @@
-import type { ViewProps, HostInstance } from 'react-native';
+import type { ViewProps, HostComponent, HostInstance } from 'react-native';
 import { codegenNativeComponent, codegenNativeCommands } from 'react-native';
 import type { BubblingEventHandler } from 'react-native/Libraries/Types/CodegenTypes';
 import type { WithDefault } from 'react-native/Libraries/Types/CodegenTypesNamespace';
@@ -30,23 +30,39 @@ export interface NativeProps extends ViewProps {
   onMenuSelect?: BubblingEventHandler<MenuSelectEvent>;
 }
 
-const MenuViewNativeComponent = codegenNativeComponent<NativeProps>('MenuView');
-
-// The ref a host component hands back. Use React Native's own `HostInstance` rather than
-// `React.ElementRef`/`React.ComponentRef` of `HostComponent<NativeProps>`: under the
-// `react-native-strict-api` condition this project compiles with (see tsconfig.json),
-// `HostComponent` is a function type, and React's ref helpers resolve it to `never` —
-// which silently turns every command call into a type error.
+// The ref a host component hands back.
 type MenuViewRef = HostInstance;
 
+type ComponentType = HostComponent<NativeProps>;
+
+/**
+ * Two incompatible requirements meet here, so read before changing:
+ *
+ *  - React Native's codegen parser checks this annotation *syntactically* and rejects
+ *    anything that is not literally `React.ElementRef<>` or `React.ComponentRef<>`. Using
+ *    an alias makes codegen fail with "The first argument of method open must be of type
+ *    React.ElementRef<> or React.ComponentRef<>" and emit an EMPTY props struct — every
+ *    prop silently disappears from the native side.
+ *  - TypeScript resolves `React.ComponentRef<HostComponent<...>>` to `never` under the
+ *    `react-native-strict-api` condition this project compiles with (see tsconfig.json),
+ *    where `HostComponent` is a function type. That makes every command call a type error.
+ *
+ * So: keep the codegen-required syntax here, verbatim. Do NOT add an `as` cast to the
+ * export either — that wraps the call in an expression codegen cannot parse, and commands
+ * stop being generated (props still are, so the breakage is easy to miss). Callers
+ * re-narrow the ref type instead; see `MenuViewRef` use in ./index.tsx.
+ */
 interface NativeCommands {
-  open: (viewRef: MenuViewRef) => void;
-  close: (viewRef: MenuViewRef) => void;
+  open: (viewRef: React.ComponentRef<ComponentType>) => void;
+  close: (viewRef: React.ComponentRef<ComponentType>) => void;
 }
 
 export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
   supportedCommands: ['open', 'close'],
 });
 
-export default MenuViewNativeComponent;
+// Must stay a direct `export default codegenNativeComponent<...>(...)` call. React Native's
+// codegen parser looks for exactly this shape; assigning it to a const first and exporting
+// the const makes codegen emit an EMPTY props struct, silently dropping every prop.
+export default codegenNativeComponent<NativeProps>('MenuView');
 export type { NativeProps as MenuViewProps, MenuViewRef };
