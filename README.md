@@ -294,6 +294,7 @@ All standard React Native `ViewProps` are supported, including `testID` and `acc
 | `iosSymbol` | `string` | SF Symbol name (iOS only) |
 | `accessibilityLabel` | `string` | Replaces the item's announced text (defaults to `title`, then `subtitle`) |
 | `accessibilityHint` | `string` | Extra guidance announced after the label |
+| `testID` | `string` | Test handle for E2E frameworks — defaults to `identifier` |
 
 ## Accessibility
 
@@ -329,6 +330,27 @@ So a menu whose trigger shows the current selection is announced correctly with 
   <Text>Advanced</Text>
 </MenuView>
 ```
+
+### Testing menu items
+
+Menu items are drawn by the platform's own menu, not by React views, so they aren't in the
+React tree. They are still addressable from E2E frameworks that drive the UI through the
+accessibility layer (Detox, Appium, XCUITest): each item exposes a test handle, defaulting to
+its `identifier`, so no extra props are needed.
+
+```tsx
+menuItems={[
+  { identifier: 'delete', title: 'Delete' },                        // handle: "delete"
+  { identifier: 'share', title: 'Share', testID: 'menu-share' },    // handle: "menu-share"
+]}
+```
+
+It surfaces as `accessibilityIdentifier` on iOS and as `resource-id` on Android — the same
+place React Native puts `testID`, so it does not pollute the accessibility label.
+
+One limitation: on Android with `androidDisplayMode="tooltip"` the rows are `MenuItem`s rather
+than views and have nowhere to carry a resource id, so test handles are unavailable in that
+mode. Match on the item's text there instead.
 
 ### Target size
 

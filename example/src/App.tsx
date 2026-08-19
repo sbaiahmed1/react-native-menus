@@ -238,6 +238,7 @@ const App = () => {
                   destructive: true,
                   accessibilityLabel: 'Delete item permanently',
                   accessibilityHint: 'This action cannot be undone',
+                  testID: 'complex-menu-delete',
                 },
               ]}
               onMenuSelect={handleMenuSelect}

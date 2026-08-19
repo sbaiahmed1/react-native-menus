@@ -403,6 +403,10 @@ class MenuView(context: Context) : FrameLayout(context) {
                         menuItem["accessibilityHint"] = item.getString("accessibilityHint") ?: ""
                     }
 
+                    if (item.hasKey("testID")) {
+                        menuItem["testID"] = item.getString("testID") ?: ""
+                    }
+
                     items.add(menuItem)
                 }
             }
@@ -775,6 +779,15 @@ class MenuView(context: Context) : FrameLayout(context) {
                         info.isCheckable = true
                         info.isChecked = radioButton.isChecked
                         info.isSelected = radioButton.isChecked
+                        // Surface the test id the way React Native does for `testID`
+                        // (ReactAccessibilityDelegate sets viewIdResourceName), so black-box
+                        // E2E tools see it as resource-id instead of it polluting
+                        // contentDescription. Defaults to the item's own identifier.
+                        val itemTestID = (item["testID"] as? String)?.takeIf { it.isNotEmpty() }
+                            ?: (item["identifier"] as? String)?.takeIf { it.isNotEmpty() }
+                        if (itemTestID != null) {
+                            info.viewIdResourceName = itemTestID
+                        }
                         if (itemHint != null) {
                             info.addAction(
                                 AccessibilityNodeInfo.AccessibilityAction(

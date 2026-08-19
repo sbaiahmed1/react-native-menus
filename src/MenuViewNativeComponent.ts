@@ -20,6 +20,17 @@ export interface MenuItem {
    * Destructive items already announce as destructive without this.
    */
   accessibilityHint?: string;
+  /**
+   * Test identifier for this item, for E2E frameworks that drive the UI through the
+   * accessibility layer (Detox, Appium, XCUITest).
+   *
+   * Defaults to `identifier`, so every item is already addressable without setting this —
+   * use it only to decouple the test handle from your business identifier.
+   *
+   * Not supported on Android with `androidDisplayMode="tooltip"`: those rows are
+   * `MenuItem`s rather than views, and have nowhere to carry a resource id.
+   */
+  testID?: string;
 }
 
 export interface MenuSelectEvent {
