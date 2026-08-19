@@ -34,6 +34,7 @@ A native menu component for React Native that provides platform-specific context
 - ✅ TypeScript support
 - ✅ Fabric (New Architecture) compatible
 - ✅ Improved Accessibility support
+- ✅ Per-item test handles for E2E testing (Detox, Appium, XCUITest)
 
 ## Installation
 
@@ -333,24 +334,58 @@ So a menu whose trigger shows the current selection is announced correctly with 
 
 ### Testing menu items
 
-Menu items are drawn by the platform's own menu, not by React views, so they aren't in the
-React tree. They are still addressable from E2E frameworks that drive the UI through the
-accessibility layer (Detox, Appium, XCUITest): each item exposes a test handle, defaulting to
-its `identifier`, so no extra props are needed.
+Menu items are drawn by the platform's own menu rather than by React views, so they never
+appear in the React tree and a `testID` on `MenuView` does not reach them. They are still
+addressable from any E2E framework that drives the UI through the accessibility layer.
+
+Every item exposes a test handle. It defaults to the item's `identifier`, so existing menus
+are already addressable without adding anything:
 
 ```tsx
-menuItems={[
-  { identifier: 'delete', title: 'Delete' },                        // handle: "delete"
-  { identifier: 'share', title: 'Share', testID: 'menu-share' },    // handle: "menu-share"
-]}
+<MenuView
+  testID="sort-menu"                                          // the trigger
+  menuItems={[
+    { identifier: 'delete', title: 'Delete' },                // handle: "delete"
+    { identifier: 'share', title: 'Share', testID: 'x' },     // handle: "x"
+  ]}
+  onMenuSelect={handleSelect}
+>
+  <Text>Sort</Text>
+</MenuView>
 ```
 
-It surfaces as `accessibilityIdentifier` on iOS and as `resource-id` on Android — the same
-place React Native puts `testID`, so it does not pollute the accessibility label.
+Set `testID` on an item only when you want the test handle to differ from the business
+identifier you receive in `onMenuSelect`.
 
-One limitation: on Android with `androidDisplayMode="tooltip"` the rows are `MenuItem`s rather
-than views and have nowhere to carry a resource id, so test handles are unavailable in that
-mode. Match on the item's text there instead.
+#### Where it surfaces
+
+| Platform | Exposed as | Matched by |
+|----------|-----------|------------|
+| iOS | `accessibilityIdentifier` on the `UIAction` | Detox `by.id()`, XCUITest `.buttons["…"]`, Appium `accessibility id` |
+| Android (dialog) | `viewIdResourceName` on the row | Detox `by.id()`, Appium `resource-id`, UiAutomator |
+
+Android uses the same field React Native uses for `testID`, so test handles stay out of the
+accessibility label — a screen reader still announces the item's text, not its test id.
+
+```js
+// Detox — open the menu, then tap an item
+await element(by.id('sort-menu')).tap();
+await element(by.id('delete')).tap();
+```
+
+```js
+// Appium
+await driver.$('~delete').click();                        // iOS, accessibility id
+await driver.$('android=new UiSelector().resourceId("delete")').click();
+```
+
+> **Not available on Android in `androidDisplayMode="tooltip"`.** Those rows are `MenuItem`s
+> rather than views, so there is nowhere to attach a resource id. Match on the item's visible
+> text in that mode, or use the default `dialog` mode when you need test handles.
+
+On iOS this relies on `UIAction` accepting an accessibility identifier. That works (verified
+on iOS 26) but is not part of UIKit's documented contract, so treat it as an enhancement and
+keep `title` meaningful on its own.
 
 ### Target size
 
