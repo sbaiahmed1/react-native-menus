@@ -383,9 +383,10 @@ await driver.$('android=new UiSelector().resourceId("delete")').click();
 > rather than views, so there is nowhere to attach a resource id. Match on the item's visible
 > text in that mode, or use the default `dialog` mode when you need test handles.
 
-On iOS this relies on `UIAction` accepting an accessibility identifier. That works (verified
-on iOS 26) but is not part of UIKit's documented contract, so treat it as an enhancement and
-keep `title` meaningful on its own.
+On iOS the identifier is set through `UIAccessibilityIdentification`, which `UIMenuElement`
+conforms to, so the API itself is documented. What is not spelled out by Apple is that UIKit
+then surfaces that identifier on the rendered menu item — that part is verified by hand
+(iOS 26). Keep `title` meaningful on its own in case a future release changes it.
 
 ### Target size
 
