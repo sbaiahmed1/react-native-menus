@@ -295,6 +295,9 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
             if (!item.accessibilityHint.empty()) {
                 dict[@"accessibilityHint"] = [[NSString alloc] initWithUTF8String:item.accessibilityHint.c_str()];
             }
+            if (!item.testID.empty()) {
+                dict[@"testID"] = [[NSString alloc] initWithUTF8String:item.testID.c_str()];
+            }
 
             [items addObject:dict];
         }
@@ -365,6 +368,17 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
         // Set state based on current selection (controlled via props)
         if (selectedIdentifier != nil && ![selectedIdentifier isEqualToString:@""] && [identifier isEqualToString:selectedIdentifier]) {
             action.state = UIMenuElementStateOn;
+        }
+
+        // Test identifier, defaulting to the item's own identifier so every item is
+        // addressable without extra props. UIAction does not declare
+        // UIAccessibilityIdentification, but it does implement the setter, and the value
+        // reaches the accessibility tree — verified against the live AX tree on iOS 26.
+        NSString *itemTestID = item[@"testID"];
+        NSString *resolvedTestID = itemTestID.length > 0 ? itemTestID : identifier;
+        if (resolvedTestID.length > 0 &&
+            [action respondsToSelector:@selector(setAccessibilityIdentifier:)]) {
+            [(id<UIAccessibilityIdentification>)action setAccessibilityIdentifier:resolvedTestID];
         }
 
         // Best-effort per-item accessibility. UIKit builds the menu's own UI and does not
