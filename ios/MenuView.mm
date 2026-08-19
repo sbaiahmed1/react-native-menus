@@ -244,6 +244,12 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
             // Detect new properties
             contentChanged = contentChanged || (newItem.subtitle != oldItem.subtitle);
             contentChanged = contentChanged || (newItem.destructive != oldItem.destructive);
+            // Accessibility fields are baked into each UIAction, so the menu has to be
+            // rebuilt when they change — otherwise the old label/hint/test id sticks until
+            // some other tracked field happens to change.
+            contentChanged = contentChanged || (newItem.accessibilityLabel != oldItem.accessibilityLabel);
+            contentChanged = contentChanged || (newItem.accessibilityHint != oldItem.accessibilityHint);
+            contentChanged = contentChanged || (newItem.testID != oldItem.testID);
             #endif
             if (contentChanged) {
                 menuItemsChanged = true;
@@ -371,14 +377,14 @@ static const CGFloat kMinimumTouchTargetSize = 44.0;
         }
 
         // Test identifier, defaulting to the item's own identifier so every item is
-        // addressable without extra props. UIAction does not declare
-        // UIAccessibilityIdentification, but it does implement the setter, and the value
-        // reaches the accessibility tree — verified against the live AX tree on iOS 26.
+        // addressable without extra props. `UIMenuElement` conforms to
+        // UIAccessibilityIdentification (see UIAccessibilityIdentification.h), so this is
+        // documented API; that UIKit then surfaces it on the rendered menu item is the part
+        // verified by hand, against the live accessibility tree on iOS 26.
         NSString *itemTestID = item[@"testID"];
         NSString *resolvedTestID = itemTestID.length > 0 ? itemTestID : identifier;
-        if (resolvedTestID.length > 0 &&
-            [action respondsToSelector:@selector(setAccessibilityIdentifier:)]) {
-            [(id<UIAccessibilityIdentification>)action setAccessibilityIdentifier:resolvedTestID];
+        if (resolvedTestID.length > 0) {
+            action.accessibilityIdentifier = resolvedTestID;
         }
 
         // Best-effort per-item accessibility. UIKit builds the menu's own UI and does not
